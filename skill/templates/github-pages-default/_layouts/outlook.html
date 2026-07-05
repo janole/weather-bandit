@@ -1,0 +1,55 @@
+---
+layout: default
+---
+
+<article class="outlook-page">
+  <header class="outlook-hero">
+    <div class="outlook-hero-text">
+      <p class="eyebrow">Weather outlook</p>
+      <h1>{{ page.title | default: "Untitled outlook" | escape }}</h1>
+    </div>
+    <dl class="outlook-metadata" aria-label="Outlook metadata">
+      {% if page.city %}
+        <div>
+          <dt>City</dt>
+          <dd>{{ page.city | escape }}{% if page.country %}, {{ page.country | escape }}{% endif %}</dd>
+        </div>
+      {% endif %}
+      {% if page.date %}
+        <div>
+          <dt>Date</dt>
+          <dd><time datetime="{{ page.date | escape }}">{{ page.date | date: "%Y-%m-%d" }}</time></dd>
+        </div>
+      {% endif %}
+      {% if page.forecastDays %}
+        <div>
+          <dt>Horizon</dt>
+          <dd>{{ page.forecastDays }} days</dd>
+        </div>
+      {% endif %}
+      {% if page.generatedAt %}
+        <div>
+          <dt>Generated</dt>
+          <dd><time datetime="{{ page.generatedAt | escape }}">{{ page.generatedAt | date: "%Y-%m-%d %H:%M" }}</time></dd>
+        </div>
+      {% endif %}
+      <div>
+        <dt>Source</dt>
+        <dd><a href="https://open-meteo.com/">Open-Meteo</a></dd>
+      </div>
+    </dl>
+  </header>
+
+  {% if page.heroImage %}
+    <figure class="outlook-hero-image">
+      <img src="{{ page.heroImage | relative_url }}" alt="{{ page.heroAlt | default: 'Weather outlook hero image' | escape }}" loading="lazy">
+      {% if page.heroCredit %}
+        <figcaption>{{ page.heroCredit | escape }}</figcaption>
+      {% endif %}
+    </figure>
+  {% endif %}
+
+  <div class="outlook-body">
+    {{ content }}
+  </div>
+</article>

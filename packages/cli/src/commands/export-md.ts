@@ -1,7 +1,7 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { buildOutlook, DEFAULT_CITIES, DEFAULT_FORECAST_DAYS, renderOutlookMarkdown } from "@weather-bandit/core";
+import { buildOutlook, DEFAULT_CITIES, DEFAULT_FORECAST_DAYS, renderOutlookFrontmatter, renderOutlookMarkdown } from "@weather-bandit/core";
 import { Command } from "commander";
 
 /** Resolve the city argument, falling back to the first configured city. */
@@ -63,7 +63,7 @@ export function makeExportMdCommand(): Command
                 const base = `${date}-${slugify(outlook.location.name)}`;
                 const mdPath = join(opts.out, `${base}.md`);
                 const jsonPath = join(opts.out, `${base}.json`);
-                writeFile(mdPath, renderOutlookMarkdown(outlook) + "\n");
+                writeFile(mdPath, renderOutlookFrontmatter(outlook) + "\n\n" + renderOutlookMarkdown(outlook) + "\n");
                 writeFile(jsonPath, JSON.stringify(outlook, null, 2) + "\n");
                 console.log(mdPath);
                 console.log(jsonPath);

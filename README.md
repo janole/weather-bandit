@@ -129,6 +129,27 @@ const cv = crossValidate(models);           // { agreements, disagreements }
 Data © [Open-Meteo](https://open-meteo.com/) — this tool only reads the public,
 no-key API and adds cross-validation, probabilities, and rendering on top.
 
+## Publishing to GitHub Pages
+
+`export-md` emits Jekyll frontmatter so the Markdown artifact is directly
+publishable to the bundled GitHub Pages template at
+`skill/templates/github-pages-default/`. The frontmatter includes a
+`heroImage:` slot (empty by default) that an agent with image generation can
+fill in — agents without image generation leave it blank and the page renders
+without an image.
+
+```sh
+# Build a publish-ready outlook
+mkdir -p outlooks/2026-07-05-berlin
+weather-bandit export-md Berlin --out outlooks/2026-07-05-berlin
+mv outlooks/2026-07-05-berlin/2026-07-05-berlin.md outlooks/2026-07-05-berlin/index.md
+```
+
+The template is a Jekyll site with a Swiss/data-viz theme, themable via CSS
+custom properties, a hero-image slot, and a local design fixture for layout
+checks without Jekyll. See `skill/SKILL.md` for the full agent workflow,
+including the hero-image style catalog.
+
 ## Development
 
 ```sh
@@ -148,8 +169,11 @@ pnpm dev export-md Berlin --out ./outlooks
 ```
 packages/
   core/     @weather-bandit/core — the engine (geocode, fetch, models,
-            cross-validate, probability, outlook + Markdown render)
+            cross-validate, probability, outlook + Markdown/frontmatter render)
   cli/      weather-bandit — the CLI (thin; all logic in core)
+skill/
+  SKILL.md                              agent instructions + image catalog
+  templates/github-pages-default/       Jekyll publishing template (Swiss theme)
 ```
 
 ## Roadmap
@@ -158,14 +182,19 @@ packages/
 30-member ensemble probabilities, cross-validation, Markdown + JSON outlook,
 `outlook` and `export-md` commands.
 
+**Done (Phase 1):** GitHub Pages template + agent skill —
+`skill/templates/github-pages-default/` (Jekyll site, Swiss/data-viz theme,
+themable via CSS custom properties, hero-image slot, design fixture) and
+`skill/SKILL.md` (CLI driving instructions, hero-image style catalog, publishing
+workflow). `export-md` now emits Jekyll frontmatter so artifacts are
+publish-ready.
+
 **Later:**
 - Rain/wind probabilities from the ensemble (currently derived from the
   deterministic models).
 - A "my cities" config file (currently a built-in default).
 - A history archive of past outlooks.
 - Automation / cron publishing.
-- A GitHub Pages publishing template + agent skill, in the spirit of
-  session-bandit.
 
 ## License
 

@@ -11,6 +11,7 @@ export {
 export {
     buildOutlook,
     DEFAULT_FORECAST_DAYS,
+    renderOutlookFrontmatter,
     renderOutlookMarkdown,
 } from "./outlook.js";
 export { computeProbabilityBands,percentile, probabilityAtOrAbove } from "./probability.js";

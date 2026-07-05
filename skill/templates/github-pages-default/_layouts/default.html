@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% if page.title %}{{ page.title | escape }} · {% endif %}{{ site.title | escape }}</title>
+  <meta name="description" content="{{ page.description | default: site.description | escape }}">
+  <link rel="stylesheet" href="{{ '/assets/outlook.css' | relative_url }}">
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="{{ '/' | relative_url }}" aria-label="{{ site.title | escape }} home">
+      <span class="brand-mark" aria-hidden="true">WB</span>
+      <span>
+        <span class="brand-title">{{ site.title | escape }}</span>
+        <span class="brand-subtitle">cross-validated forecasts</span>
+      </span>
+    </a>
+    <nav class="site-nav" aria-label="Primary">
+      <a href="{{ '/' | relative_url }}">Outlooks</a>
+      <a href="https://github.com/janole/weather-bandit">Weather Bandit</a>
+    </nav>
+  </header>
+
+  <main>
+    {{ content }}
+  </main>
+
+  <footer class="site-footer">
+    <span>Data © <a href="https://open-meteo.com/">Open-Meteo</a>. Built with Weather Bandit.</span>
+    <span>Deterministic. No tracking. No API key.</span>
+  </footer>
+</body>
+</html>

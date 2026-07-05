@@ -143,6 +143,46 @@ export async function buildOutlook(cityOrLoc: string, forecastDays: number = DEF
 /** Re-export the default forecast horizon so the CLI can reference it. */
 export { DEFAULT_FORECAST_DAYS };
 
+// --- Frontmatter (publishing) -----------------------------------------------
+
+/** YAML-escape a string for a frontmatter value. */
+function yamlString(s: string): string
+{
+    // Escape backslashes first, then double quotes, for a YAML double-quoted value.
+    return s.replace(/\\/g, "\\\\").replace(/"/g, "\\\"");
+}
+
+/**
+ * Render Jekyll frontmatter for an {@link Outlook}, suitable for the
+ * `github-pages-default` template. The `heroImage` field is left empty so an
+ * agent with image generation can fill it in; agents without it leave it blank
+ * and the layout renders without an image.
+ */
+export function renderOutlookFrontmatter(outlook: Outlook): string
+{
+    const { location, generatedAt, forecastDays } = outlook;
+    const date = generatedAt.slice(0, 10);
+    const title = `${location.name} · ${date}`;
+    const lines: string[] = [
+        "---",
+        "layout: outlook",
+        `title: "${yamlString(title)}"`,
+        `city: "${yamlString(location.name)}"`,
+    ];
+    if (location.country)
+    {
+        lines.push(`country: "${yamlString(location.country)}"`);
+    }
+    lines.push(
+        `date: ${date}`,
+        `generatedAt: ${generatedAt}`,
+        `forecastDays: ${forecastDays}`,
+        "heroImage:",
+        "---",
+    );
+    return lines.join("\n");
+}
+
 // --- Markdown rendering ------------------------------------------------------
 
 /** Format a number for a table cell, or `—` for null/missing. */

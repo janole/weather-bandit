@@ -1,0 +1,53 @@
+---
+layout: default
+---
+
+<section class="home-hero">
+  <div class="home-hero-inner">
+    <p class="eyebrow">Deterministic weather outlooks</p>
+    <h1>{{ page.title | default: site.title | escape }}</h1>
+    <div class="home-copy">
+      {{ content }}
+    </div>
+  </div>
+</section>
+
+{% comment %}Collect outlook pages (everything under outlooks/ that is markdown).{% endcomment %}
+{% assign outlook_pages = "" | split: "" %}
+{% for p in site.pages %}
+  {% if p.path contains "outlooks/" and p.path contains ".md" %}
+    {% unless p.path contains ".gitkeep" %}
+      {% assign outlook_pages = outlook_pages | push: p %}
+    {% endunless %}
+  {% endif %}
+{% endfor %}
+{% assign outlook_pages = outlook_pages | sort: "date" | reverse %}
+
+<section class="outlook-index" aria-labelledby="outlook-index-title">
+  <div class="section-heading">
+    <p class="eyebrow">Archive</p>
+    <h2 id="outlook-index-title">Published Outlooks</h2>
+  </div>
+
+  {% if outlook_pages.size > 0 %}
+    <ol class="outlook-list">
+      {% for outlook in outlook_pages %}
+        <li class="outlook-card">
+          <a href="{{ outlook.url | relative_url }}">
+            <span class="outlook-card-title">{{ outlook.title | default: outlook.slug | escape }}</span>
+            <span class="outlook-card-meta">
+              {% if outlook.city %}{{ outlook.city | escape }}{% endif %}
+              {% if outlook.date %}<span aria-hidden="true">/</span> {{ outlook.date | date: "%Y-%m-%d" }}{% endif %}
+              {% if outlook.forecastDays %}<span aria-hidden="true">/</span> {{ outlook.forecastDays }}d{% endif %}
+            </span>
+          </a>
+        </li>
+      {% endfor %}
+    </ol>
+  {% else %}
+    <div class="empty-state">
+      <h3>No outlooks published yet</h3>
+      <p>Export an outlook into <code>outlooks/&lt;date&gt;-&lt;city&gt;/index.md</code>.</p>
+    </div>
+  {% endif %}
+</section>

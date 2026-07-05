@@ -1,0 +1,17 @@
+title: Weather Outlook
+description: Cross-validated daily weather outlooks from Open-Meteo.
+markdown: kramdown
+kramdown:
+  input: GFM
+  hard_wrap: false
+  syntax_highlighter: rouge
+permalink: pretty
+defaults:
+  - scope:
+      path: ""
+    values:
+      layout: default
+  - scope:
+      path: "outlooks"
+    values:
+      layout: outlook
