@@ -13,7 +13,7 @@ describe("createProgram", () =>
         expect(names).toContain("export-md");
     });
 
-    it("outlook has a [city] argument and --json/--days options", () =>
+    it("outlook has a [city] argument and --json/--days/--style options", () =>
     {
         const program = createProgram();
         const outlook = program.commands.find((c) => c.name() === "outlook")!;
@@ -22,6 +22,7 @@ describe("createProgram", () =>
         const optFlags = outlook.options.map((o) => o.long);
         expect(optFlags).toContain("--json");
         expect(optFlags).toContain("--days");
+        expect(optFlags).toContain("--style");
     });
 
     it("export-md requires --out", () =>

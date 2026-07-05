@@ -6,7 +6,7 @@ layout: default
   <header class="outlook-hero">
     <div class="outlook-hero-text">
       <p class="eyebrow">Weather outlook</p>
-      <h1>{{ page.title | default: "Untitled outlook" | escape }}</h1>
+      <h1>{{ page.city | default: page.title | default: "Untitled outlook" | escape }}</h1>
     </div>
     <dl class="outlook-metadata" aria-label="Outlook metadata">
       {% if page.city %}
@@ -49,7 +49,17 @@ layout: default
     </figure>
   {% endif %}
 
+  {% if page.dataFile %}
+    <section class="outlook-dashboard" data-outlook-dashboard data-outlook-src="{{ page.dataFile | escape }}" aria-label="Interactive weather dashboard">
+      <p class="dashboard-loading">Loading forecast dashboard...</p>
+    </section>
+  {% endif %}
+
   <div class="outlook-body">
     {{ content }}
   </div>
 </article>
+
+{% if page.dataFile %}
+  <script type="module" src="{{ '/assets/outlook-dashboard.js' | relative_url }}"></script>
+{% endif %}

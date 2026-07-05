@@ -1,7 +1,7 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { buildOutlook, DEFAULT_CITIES, DEFAULT_FORECAST_DAYS, renderOutlookFrontmatter, renderOutlookMarkdown } from "@weather-bandit/core";
+import { buildOutlook, DEFAULT_CITIES, DEFAULT_FORECAST_DAYS, outlookArtifactBase, renderOutlookFrontmatter, renderOutlookMarkdown } from "@weather-bandit/core";
 import { Command } from "commander";
 
 /** Resolve the city argument, falling back to the first configured city. */
@@ -17,18 +17,6 @@ function resolveCity(city: string | undefined): string
         throw new Error("No city provided and the default cities config is empty.");
     }
     return fallback;
-}
-
-/** Slugify a city name for filenames (lowercase, hyphenated, ASCII-folded). */
-function slugify(name: string): string
-{
-    return name
-        .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g, "")
-        .toLowerCase()
-        .trim()
-        .replace(/[^a-z0-9]+/g, "-")
-        .replace(/^-+|-+$/g, "");
 }
 
 function writeFile(path: string, contents: string): void
@@ -59,8 +47,7 @@ export function makeExportMdCommand(): Command
             try
             {
                 const outlook = await buildOutlook(name, days);
-                const date = outlook.generatedAt.slice(0, 10);
-                const base = `${date}-${slugify(outlook.location.name)}`;
+                const base = outlookArtifactBase(outlook);
                 const mdPath = join(opts.out, `${base}.md`);
                 const jsonPath = join(opts.out, `${base}.json`);
                 writeFile(mdPath, renderOutlookFrontmatter(outlook) + "\n\n" + renderOutlookMarkdown(outlook) + "\n");

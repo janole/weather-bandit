@@ -57,6 +57,11 @@ weather-bandit outlook "New York"
 # Fewer/more forecast days
 weather-bandit outlook Berlin --days 3
 
+# Reusable Markdown variants
+weather-bandit outlook Berlin --style briefing
+weather-bandit outlook Berlin --style summary
+weather-bandit outlook Berlin --style tables
+
 # Structured Outlook as JSON to stdout
 weather-bandit outlook Berlin --json
 
@@ -68,7 +73,7 @@ weather-bandit export-md Berlin --out ./outlooks
 ### Commands
 
 ```
-weather-bandit outlook [city] [--days <n>] [--json]
+weather-bandit outlook [city] [--days <n>] [--json] [--style full|briefing|summary|tables]
 weather-bandit export-md [city] --out <dir> [--days <n>]
 ```
 
@@ -77,6 +82,7 @@ weather-bandit export-md [city] --out <dir> [--days <n>]
 | `[city]` | City name; defaults to the first entry of the cities config (`Berlin`) |
 | `-d, --days <n>` | Forecast days (default 7; ensemble capped at 16) |
 | `--json` | `outlook`: print the structured `Outlook` as JSON instead of Markdown |
+| `--style <style>` | `outlook`: Markdown style (`full`, `briefing`, `summary`, or `tables`; default `full`) |
 | `--out <dir>` | `export-md`: required output directory for the `.md` + `.json` pair |
 
 The default output is human-readable Markdown: today's hourly table

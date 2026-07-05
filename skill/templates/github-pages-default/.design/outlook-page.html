@@ -27,7 +27,7 @@
       <header class="outlook-hero">
         <div class="outlook-hero-text">
           <p class="eyebrow">Weather outlook</p>
-          <h1>Berlin · 2026-07-05 — a deliberately long title segment that should wrap instead of widening the page</h1>
+          <h1>Berlin</h1>
         </div>
         <dl class="outlook-metadata" aria-label="Outlook metadata">
           <div>
@@ -57,6 +57,81 @@
         <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1200' height='420'%3E%3Crect width='1200' height='420' fill='%230369a1'/%3E%3Ctext x='50%25' y='50%25' fill='%23e0f2fe' font-family='sans-serif' font-size='28' text-anchor='middle' dominant-baseline='central'%3Ehero image slot %28example%29%3C/text%3E%3C/svg%3E" alt="Weather outlook hero image placeholder" loading="lazy">
         <figcaption>Generated hero image placeholder — the real slot is empty until an agent fills it.</figcaption>
       </figure>
+
+      <section class="outlook-dashboard is-ready" aria-label="Interactive weather dashboard">
+        <section class="dashboard-hero dashboard-reveal is-visible" data-tone="clear">
+          <div class="dashboard-hero-main">
+            <p class="dashboard-label">Today in Berlin</p>
+            <h2>Mainly clear</h2>
+            <p>Berlin: mainly clear, high 27.2°C/low 12.1°C, rain 0mm, wind max 18km/h. Ensemble: highest P(max ≥ 30°C) is 82% on 2026-07-08.</p>
+          </div>
+          <div class="dashboard-now" aria-label="Today summary">
+            <div><span>27°C</span><small>High</small></div>
+            <div><span>12°C</span><small>Low</small></div>
+            <div><span>0mm</span><small>Rain</small></div>
+            <div><span>24km/h</span><small>Gusts</small></div>
+          </div>
+        </section>
+
+        <section class="dashboard-strip dashboard-reveal is-visible" aria-label="Forecast signals">
+          <div class="signal-card">
+            <span>Warmest day</span>
+            <strong>2026-07-08</strong>
+            <small>82% chance ≥30°C</small>
+          </div>
+          <div class="signal-card">
+            <span>Model runs</span>
+            <strong>3</strong>
+            <small>Best-match / GFS / ECMWF</small>
+          </div>
+          <div class="signal-card">
+            <span>Generated</span>
+            <strong>2026-07-05</strong>
+            <small>7 day horizon</small>
+          </div>
+        </section>
+
+        <section class="dashboard-panel dashboard-reveal is-visible">
+          <div class="panel-heading">
+            <p class="dashboard-label">Seven-day temperature arc</p>
+            <h2>Probability, trend, and condition in one scan</h2>
+          </div>
+          <div class="temperature-arc">
+            <article class="day-column dashboard-reveal is-visible" style="--bar-height: 36%;"><div class="day-bar" aria-hidden="true"></div><div class="day-card"><span>07-05</span><strong>27°</strong><small>Mainly clear</small><em>12% ≥30°C</em></div></article>
+            <article class="day-column dashboard-reveal is-visible" style="--bar-height: 48%;"><div class="day-bar" aria-hidden="true"></div><div class="day-card"><span>07-06</span><strong>29°</strong><small>Mainly clear</small><em>34% ≥30°C</em></div></article>
+            <article class="day-column dashboard-reveal is-visible" style="--bar-height: 64%;"><div class="day-bar" aria-hidden="true"></div><div class="day-card"><span>07-07</span><strong>31°</strong><small>Partly cloudy</small><em>62% ≥30°C</em></div></article>
+            <article class="day-column dashboard-reveal is-visible" style="--bar-height: 88%;"><div class="day-bar" aria-hidden="true"></div><div class="day-card"><span>07-08</span><strong>33°</strong><small>Mainly clear</small><em>82% ≥30°C</em></div></article>
+            <article class="day-column dashboard-reveal is-visible" style="--bar-height: 70%;"><div class="day-bar" aria-hidden="true"></div><div class="day-card"><span>07-09</span><strong>30°</strong><small>Partly cloudy</small><em>48% ≥30°C</em></div></article>
+            <article class="day-column dashboard-reveal is-visible" style="--bar-height: 42%;"><div class="day-bar" aria-hidden="true"></div><div class="day-card"><span>07-10</span><strong>28°</strong><small>Overcast</small><em>16% ≥30°C</em></div></article>
+            <article class="day-column dashboard-reveal is-visible" style="--bar-height: 32%;"><div class="day-bar" aria-hidden="true"></div><div class="day-card"><span>07-11</span><strong>26°</strong><small>Slight rain</small><em>7% ≥30°C</em></div></article>
+          </div>
+        </section>
+
+        <section class="dashboard-grid">
+          <article class="dashboard-panel dashboard-reveal is-visible">
+            <div class="panel-heading">
+              <p class="dashboard-label">Model spread</p>
+              <h2>Today, side by side</h2>
+            </div>
+            <ol class="model-list">
+              <li><span>Best</span><strong>27.2°C</strong><small>0mm rain / 18km/h wind</small></li>
+              <li><span>GFS</span><strong>27.9°C</strong><small>0.2mm rain / 17.2km/h wind</small></li>
+              <li><span>ECMWF</span><strong>26.5°C</strong><small>0mm rain / 16.4km/h wind</small></li>
+            </ol>
+          </article>
+          <article class="dashboard-panel dashboard-reveal is-visible">
+            <div class="panel-heading">
+              <p class="dashboard-label">Cross-validation</p>
+              <h2>What deserves attention</h2>
+            </div>
+            <div class="disagreement-note" data-count="0">
+              <strong>0</strong>
+              <span>flagged disagreement points in the generated summary.</span>
+            </div>
+            <p>The dashboard is generated from the JSON sidecar. The Markdown tables below remain the audit trail.</p>
+          </article>
+        </section>
+      </section>
 
       <div class="outlook-body">
         <h1>Weather Outlook — Berlin, Germany</h1>

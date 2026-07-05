@@ -27,6 +27,11 @@ weather-bandit outlook "New York"
 # Structured JSON to stdout
 weather-bandit outlook Berlin --json
 
+# Reusable Markdown variants
+weather-bandit outlook Berlin --style briefing
+weather-bandit outlook Berlin --style summary
+weather-bandit outlook Berlin --style tables
+
 # Write the canonical Markdown + JSON artifact to a directory
 weather-bandit export-md Berlin --out ./outlooks
 ```
@@ -34,7 +39,7 @@ weather-bandit export-md Berlin --out ./outlooks
 ## Commands
 
 ```text
-weather-bandit outlook [city] [--days <n>] [--json]
+weather-bandit outlook [city] [--days <n>] [--json] [--style full|briefing|summary|tables]
 weather-bandit export-md [city] --out <dir> [--days <n>]
 ```
 

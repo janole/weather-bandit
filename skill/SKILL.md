@@ -69,6 +69,11 @@ weather-bandit outlook "New York"
 # Fewer/more forecast days (ensemble capped at 16)
 weather-bandit outlook Berlin --days 3
 
+# Reusable Markdown variants
+weather-bandit outlook Berlin --style briefing
+weather-bandit outlook Berlin --style summary
+weather-bandit outlook Berlin --style tables
+
 # Structured JSON (machine-readable, no Markdown)
 weather-bandit outlook Berlin --json
 ```
@@ -92,6 +97,7 @@ mv outlooks/2026-07-05-berlin/2026-07-05-berlin.md outlooks/2026-07-05-berlin/in
 | `[city]` | City name; defaults to the first entry of the cities config (`Berlin`) |
 | `-d, --days <n>` | Forecast days (default 7; ensemble capped at 16) |
 | `--json` | `outlook`: print the structured `Outlook` as JSON instead of Markdown |
+| `--style <style>` | `outlook`: Markdown style (`full`, `briefing`, `summary`, or `tables`; default `full`) |
 | `--out <dir>` | `export-md`: required output directory for the `.md` + `.json` pair |
 
 ## Frontmatter
@@ -108,13 +114,16 @@ country: "Germany"
 date: 2026-07-05
 generatedAt: 2026-07-05T09:58:27.920Z
 forecastDays: 7
+dataFile: 2026-07-05-berlin.json
 heroImage:
 ---
 ```
 
-The `heroImage:` field is empty by default. An agent with image generation can
-fill it in (see below). Agents without image generation leave it blank — the
-page renders without an image.
+The `dataFile:` field points at the JSON sidecar in the same folder. The
+GitHub Pages template uses it to render the animated dashboard while keeping
+the Markdown body as the reviewable fallback. The `heroImage:` field is empty
+by default. An agent with image generation can fill it in (see below). Agents
+without image generation leave it blank — the page renders without an image.
 
 ## Publishing a daily outlook
 
@@ -222,6 +231,8 @@ Template behavior:
 - It expects generated outlooks at `outlooks/<date>-<city>/index.md`.
 - It expects the structured JSON beside the outlook
   (`outlooks/<date>-<city>/<date>-<city>.json`).
+- It uses `dataFile` frontmatter to load the JSON sidecar and render an
+  animated, JSON-driven dashboard above the canonical Markdown tables.
 - For a GitHub Pages project site at `https://<user>.github.io/<repo>/`, set
   `baseurl: "/<repo>"` in `_config.yml` before publishing. Leave `baseurl`
   empty only for a user/org site or a custom domain mounted at `/`.
@@ -229,8 +240,10 @@ Template behavior:
   `outlook` layout automatically.
 - It includes a local `.design/outlook-page.html` fixture for layout checks
   without Jekyll or a Pages deploy.
-- It is static and self-contained; do not add external assets, trackers, fonts,
-  or remote scripts unless the user explicitly asks.
+- It is static and self-contained; the only client script is
+  `assets/outlook-dashboard.js`, which loads the local JSON sidecar. Do not add
+  external assets, trackers, fonts, or remote scripts unless the user
+  explicitly asks.
 - It exposes a CSS custom-property palette on `:root` in
   `assets/outlook.css` so a downstream stylesheet can retheme it without
   touching the layout markup.

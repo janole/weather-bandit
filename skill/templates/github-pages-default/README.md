@@ -13,13 +13,17 @@ weather-bandit export-md Berlin --out outlooks/2026-07-05-berlin
 ```
 
 This writes `outlooks/2026-07-05-berlin/2026-07-05-berlin.md` and a matching
-`.json`. For a clean permalink, rename the Markdown to `index.md`:
+`.json`. The Markdown frontmatter includes `dataFile:
+2026-07-05-berlin.json`, which powers the JSON-driven dashboard. For a clean
+permalink, rename the Markdown to `index.md`:
 
 ```sh
 mv outlooks/2026-07-05-berlin/2026-07-05-berlin.md outlooks/2026-07-05-berlin/index.md
 ```
 
-Review both files before committing or pushing.
+Review both files before committing or pushing. The Markdown tables remain the
+canonical audit trail; the dashboard above them is generated from the JSON
+sidecar.
 
 ## Optional: hero image
 
@@ -49,10 +53,13 @@ The template uses Jekyll defaults in `_config.yml` so files under
 
 ## Theming
 
-The default Swiss/data-viz theme lives in `assets/outlook.css` and exposes its
-palette and spacing as CSS custom properties on `:root`. Override them in a
-downstream stylesheet (loaded after `outlook.css`) to retheme without touching
-the layout markup:
+The default data-viz theme lives in `assets/outlook.css` and exposes its
+palette and spacing as CSS custom properties on `:root`. The JSON dashboard is
+rendered by `assets/outlook-dashboard.js`, which loads the local `dataFile`
+sidecar and creates independent modules for hero KPIs, signals, temperature
+arc, and model comparison. Override the custom properties in a downstream
+stylesheet (loaded after `outlook.css`) to retheme without touching the layout
+markup:
 
 ```css
 :root {

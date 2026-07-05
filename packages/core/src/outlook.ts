@@ -116,6 +116,26 @@ function maxNotNull(values: (number | null)[]): number | null
     return Math.max(...nums);
 }
 
+function modelLabel(id: string): string
+{
+    return getModelDef(id)?.label ?? id;
+}
+
+function modelRun(outlook: Outlook, id: string): Outlook["models"][number] | undefined
+{
+    return outlook.models.find((m) => m.model === id);
+}
+
+function dailyFor(outlook: Outlook, modelId: string, date: string): NonNullable<Outlook["models"][number]["daily"]>[number] | undefined
+{
+    return modelRun(outlook, modelId)?.daily?.find((d) => d.date === date);
+}
+
+function hourlyFor(outlook: Outlook, modelId: string, date: string): HourlyPoint[]
+{
+    return modelRun(outlook, modelId)?.hourly.filter((h) => h.time.slice(0, 10) === date) ?? [];
+}
+
 /**
  * Build a complete {@link Outlook} for a city: geocode, fetch the three
  * deterministic models and the 30-member ensemble, cross-validate, and
@@ -143,6 +163,13 @@ export async function buildOutlook(cityOrLoc: string, forecastDays: number = DEF
 /** Re-export the default forecast horizon so the CLI can reference it. */
 export { DEFAULT_FORECAST_DAYS };
 
+export type OutlookMarkdownStyle = "briefing" | "full" | "summary" | "tables";
+
+interface RenderOutlookMarkdownOptions
+{
+    style?: OutlookMarkdownStyle;
+}
+
 // --- Frontmatter (publishing) -----------------------------------------------
 
 /** YAML-escape a string for a frontmatter value. */
@@ -152,11 +179,30 @@ function yamlString(s: string): string
     return s.replace(/\\/g, "\\\\").replace(/"/g, "\\\"");
 }
 
+/** Slugify an outlook location name for generated artifact filenames. */
+export function slugifyOutlookLocation(name: string): string
+{
+    return name
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase()
+        .trim()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-+|-+$/g, "");
+}
+
+/** Basename shared by the exported Markdown and JSON outlook artifacts. */
+export function outlookArtifactBase(outlook: Outlook): string
+{
+    return `${outlook.generatedAt.slice(0, 10)}-${slugifyOutlookLocation(outlook.location.name)}`;
+}
+
 /**
  * Render Jekyll frontmatter for an {@link Outlook}, suitable for the
  * `github-pages-default` template. The `heroImage` field is left empty so an
  * agent with image generation can fill it in; agents without it leave it blank
- * and the layout renders without an image.
+ * and the layout renders without an image. The `dataFile` field points at the
+ * matching JSON sidecar so the template can render richer data-driven modules.
  */
 export function renderOutlookFrontmatter(outlook: Outlook): string
 {
@@ -177,6 +223,7 @@ export function renderOutlookFrontmatter(outlook: Outlook): string
         `date: ${date}`,
         `generatedAt: ${generatedAt}`,
         `forecastDays: ${forecastDays}`,
+        `dataFile: ${outlookArtifactBase(outlook)}.json`,
         "heroImage:",
         "---",
     );
@@ -297,19 +344,204 @@ function renderModelNote(outlook: Outlook): string
     return failed.map((m) => `- ${getModelDef(m.model)?.label ?? m.model}: ${m.error}`).join("\n");
 }
 
+const MODEL_ORDER = ["best-match", "gfs", "ecmwf"];
+
+function timeLabel(time: string | undefined): string
+{
+    return time ? time.slice(11, 16) : "—";
+}
+
+function peakHourly(hours: HourlyPoint[], get: (h: HourlyPoint) => number | null): { time?: string; value: number | null }
+{
+    let best: HourlyPoint | undefined;
+    let bestValue: number | null = null;
+    for (const h of hours)
+    {
+        const value = get(h);
+        if (value === null)
+        {
+            continue;
+        }
+        if (bestValue === null || value > bestValue)
+        {
+            best = h;
+            bestValue = value;
+        }
+    }
+    return { time: best?.time, value: bestValue };
+}
+
+function average(values: (number | null)[]): number | null
+{
+    const nums = values.filter((v): v is number => v !== null);
+    if (nums.length === 0)
+    {
+        return null;
+    }
+    return nums.reduce((a, b) => a + b, 0) / nums.length;
+}
+
+function rainWindow(hours: HourlyPoint[], daily: number | null | undefined): string
+{
+    const wet = hours.filter((h) => (h.precipitation ?? 0) >= 0.1);
+    if (wet.length === 0)
+    {
+        return daily !== null && daily !== undefined && daily >= 0.1 ? `${cell(daily, 1)}mm total` : "dry";
+    }
+    const first = wet[0]?.time;
+    const last = wet.at(-1)?.time;
+    const window = first === last ? timeLabel(first) : `${timeLabel(first)}–${timeLabel(last)}`;
+    return `${cell(daily, 1)}mm total, mainly ${window}`;
+}
+
+function renderTodayBriefingTable(outlook: Outlook, date: string): string
+{
+    const labels = MODEL_ORDER.map((id) => modelLabel(id));
+    const rows = [
+        ["Max temp", (id: string) =>
+        {
+            const peak = peakHourly(hourlyFor(outlook, id, date), (h) => h.temperature);
+            return peak.value === null ? fmt(dailyFor(outlook, id, date)?.tempMax, "°C") : `${fmt(peak.value, "°C")} (${timeLabel(peak.time)})`;
+        }],
+        ["Min temp", (id: string) => fmt(dailyFor(outlook, id, date)?.tempMin, "°C")],
+        ["Rain", (id: string) => rainWindow(hourlyFor(outlook, id, date), dailyFor(outlook, id, date)?.precipSum)],
+        ["Wind", (id: string) =>
+        {
+            const peak = peakHourly(hourlyFor(outlook, id, date), (h) => h.windspeed);
+            return peak.value === null ? fmt(dailyFor(outlook, id, date)?.windMax, "km/h") : `${fmt(peak.value, "km/h")} (${timeLabel(peak.time)})`;
+        }],
+        ["Gusts", (id: string) =>
+        {
+            const peak = peakHourly(hourlyFor(outlook, id, date), (h) => h.windgusts);
+            return peak.value === null ? "—" : `${fmt(peak.value, "km/h")} (${timeLabel(peak.time)})`;
+        }],
+        ["Cloud", (id: string) => `${fmt(average(hourlyFor(outlook, id, date).map((h) => h.cloudCover)), "%")} average`],
+    ] satisfies [string, (id: string) => string][];
+    const header = `| | ${labels.join(" | ")} |\n|---|---|---|---|`;
+    return [header, ...rows.map(([label, get]) => `| ${label} | ${MODEL_ORDER.map((id) => get(id)).join(" | ")} |`)].join("\n");
+}
+
+function renderBriefingProbabilityTable(outlook: Outlook): string
+{
+    const rows = outlook.probabilities
+        .filter((p) => p.pMax28 > 0 || p.pMax30 > 0 || p.pMax32 > 0)
+        .slice(0, 7);
+    const selected = rows.length > 0 ? rows : outlook.probabilities.slice(0, 7);
+    const header = "| Date | P(max ≥ 28°C) | **P(max ≥ 30°C)** | P(≥ 32°C) | p50 (median) | p75 | p90 |\n|---|---:|---:|---:|---:|---:|---:|";
+    return [
+        header,
+        ...selected.map((p) => `| ${p.date} | ${Math.round(p.pMax28 * 100)}% | **${Math.round(p.pMax30 * 100)}%** | ${Math.round(p.pMax32 * 100)}% | ${cell(p.p50, 1)}°C | ${cell(p.p75, 1)}°C | ${cell(p.p90, 1)}°C |`),
+    ].join("\n");
+}
+
+function renderBriefingCrossCheckTable(outlook: Outlook, dates: string[]): string
+{
+    const header = `| Model | ${dates.map((d) => `${d} max`).join(" | ")} |\n|---|${dates.map(() => "---:").join("|")}|`;
+    const modelRows = MODEL_ORDER.map((id) => `| ${modelLabel(id)} | ${dates.map((d) => fmt(dailyFor(outlook, id, d)?.tempMax, "°C")).join(" | ")} |`);
+    const ensemble = `| Ensemble p50 (median) | ${dates.map((d) => fmt(outlook.probabilities.find((p) => p.date === d)?.p50, "°C")).join(" | ")} |`;
+    return [header, ...modelRows, ensemble].join("\n");
+}
+
+function renderBottomLineBullets(outlook: Outlook): string[]
+{
+    const modelMarker = " Models disagree on ";
+    const ensembleMarker = " Ensemble (30 members): ";
+    const modelStart = outlook.summary.indexOf(modelMarker);
+    const ensembleStart = outlook.summary.indexOf(ensembleMarker);
+    const weatherEnd = [modelStart, ensembleStart]
+        .filter((i) => i >= 0)
+        .sort((a, b) => a - b)[0] ?? outlook.summary.length;
+    const weather = outlook.summary.slice(0, weatherEnd).trim();
+    const bullets = [`- ${weather}`];
+
+    if (modelStart >= 0)
+    {
+        const modelEnd = ensembleStart > modelStart ? ensembleStart : outlook.summary.length;
+        const modelText = outlook.summary.slice(modelStart + 1, modelEnd).trim();
+        const splitAt = modelText.indexOf(": ");
+        const lead = splitAt >= 0 ? modelText.slice(0, splitAt) : modelText;
+        const rest = splitAt >= 0 ? modelText.slice(splitAt + 2) : "";
+        bullets.push(`- ${lead}:`);
+        for (const item of rest.split("; ").map((s) => s.trim()).filter(Boolean))
+        {
+            bullets.push(`  - ${item}`);
+        }
+    }
+
+    if (ensembleStart >= 0)
+    {
+        bullets.push(`- Ensemble (30 members): ${outlook.summary.slice(ensembleStart + ensembleMarker.length).trim()}`);
+    }
+
+    return bullets;
+}
+
+function renderOutlookBriefingMarkdown(outlook: Outlook): string
+{
+    const todayDate = modelRun(outlook, "best-match")?.daily?.[0]?.date ?? outlook.probabilities[0]?.date ?? "";
+    const locLabel = outlook.location.country ? `${outlook.location.name}, ${outlook.location.country}` : outlook.location.name;
+    const hot = [...outlook.probabilities].sort((a, b) => b.pMax30 - a.pMax30)[0];
+    const focusDates = [...outlook.probabilities]
+        .filter((p) => p.pMax28 > 0 || p.pMax30 > 0 || p.pMax32 > 0)
+        .slice(0, 3)
+        .map((p) => p.date);
+    const crossDates = (focusDates.length > 0 ? focusDates : outlook.probabilities.slice(-2).map((p) => p.date)).slice(0, 3);
+    const todayDaily = dailyFor(outlook, "best-match", todayDate);
+    const hotProbability = Math.round((hot?.pMax30 ?? 0) * 100);
+    const warmProbability = Math.round((hot?.pMax28 ?? 0) * 100);
+    return [
+        `# Weather briefing — ${locLabel}`,
+        "",
+        `Generated: ${outlook.generatedAt}  `,
+        `Forecast days: ${outlook.forecastDays}  `,
+        "Models: Best-match, GFS, ECMWF  ",
+        "Source: [Open-Meteo](https://open-meteo.com/) (deterministic + 30-member ensemble)",
+        "",
+        `## Today's weather update (${todayDate})`,
+        "",
+        renderTodayBriefingTable(outlook, todayDate),
+        "",
+        `So: **${wmo(todayDaily?.weatherCode)}**, high ${fmt(todayDaily?.tempMax, "°C")}/low ${fmt(todayDaily?.tempMin, "°C")}, rain ${fmt(todayDaily?.precipSum, "mm")}, wind max ${fmt(todayDaily?.windMax, "km/h")}.`,
+        "",
+        "## Heat probability — ensemble analysis",
+        "",
+        "The 30-member ensemble is summarized by daily max-temperature percentiles and threshold probabilities:",
+        "",
+        renderBriefingProbabilityTable(outlook),
+        "",
+        "### Cross-check against deterministic models",
+        "",
+        renderBriefingCrossCheckTable(outlook, crossDates),
+        "",
+        "### My read",
+        "",
+        `- Highest P(max ≥ 30°C): **${hotProbability}% on ${hot?.date ?? "—"}**.`,
+        `- Warm-day signal on that date: P(max ≥ 28°C) is **${warmProbability}%**, with ensemble median ${fmt(hot?.p50, "°C")} and p90 ${fmt(hot?.p90, "°C")}.`,
+        "- Deterministic model disagreement is useful signal, not noise; use the cross-check table to see whether one model is leading or lagging the heat risk.",
+        "- Re-check as the target day moves inside the 3–4 day window; the ensemble spread should narrow.",
+        "",
+        "### Bottom line",
+        "",
+        ...renderBottomLineBullets(outlook),
+        `- Most likely today: ${wmo(todayDaily?.weatherCode)}, high ${fmt(todayDaily?.tempMax, "°C")}, rain ${fmt(todayDaily?.precipSum, "mm")}.`,
+        `- Highest heat signal: ${hotProbability}% chance of max ≥ 30°C on ${hot?.date ?? "—"}.`,
+        "",
+    ].join("\n");
+}
+
 /**
  * Render an {@link Outlook} as canonical Markdown: header, today's hourly
  * cross-validated table, multi-day daily summary, ensemble probability bands,
  * cross-validation findings, and the plain-English summary. B/G/E denotes
  * Best-match / GFS / ECMWF.
  */
-export function renderOutlookMarkdown(outlook: Outlook): string
+export function renderOutlookMarkdown(outlook: Outlook, options: RenderOutlookMarkdownOptions = {}): string
 {
     const { location, generatedAt, forecastDays, models, probabilities, summary } = outlook;
     const today = models[0]?.daily?.[0]?.date ?? "";
     const locLabel = location.country ? `${location.name}, ${location.country}` : location.name;
     const note = renderModelNote(outlook);
-    const sections = [
+    const intro = [
         `# Weather Outlook — ${locLabel}`,
         "",
         `Generated: ${generatedAt}  `,
@@ -317,27 +549,73 @@ export function renderOutlookMarkdown(outlook: Outlook): string
         "Models: Best-match / GFS / ECMWF (B/G/E)  ",
         "Source: [Open-Meteo](https://open-meteo.com/) (deterministic + 30-member ensemble)",
         "",
+    ];
+    const todaySection = [
         `## Today — ${today} (hourly, cross-validated)`,
         "",
         renderHourlyTable(models, today),
         "",
+    ];
+    const dailySection = [
         "## Daily summary",
         "",
         renderDailyTable(models),
         "",
+    ];
+    const probabilitySection = [
         "## Probability bands (ensemble, 30 members)",
         "",
         renderProbabilityTable(probabilities),
         "",
+    ];
+    const crossValidationSection = [
         "## Cross-validation",
         "",
         renderCrossValidation(outlook),
         "",
+    ];
+    const summarySection = [
         "## Summary",
         "",
         summary,
         "",
     ];
+
+    const style = options.style ?? "full";
+    let sections: string[];
+    if (style === "briefing")
+    {
+        return renderOutlookBriefingMarkdown(outlook);
+    }
+    if (style === "summary")
+    {
+        sections = [
+            ...intro,
+            ...summarySection,
+            ...dailySection,
+            ...probabilitySection,
+        ];
+    }
+    else if (style === "tables")
+    {
+        sections = [
+            ...intro,
+            ...todaySection,
+            ...dailySection,
+            ...probabilitySection,
+        ];
+    }
+    else
+    {
+        sections = [
+            ...intro,
+            ...todaySection,
+            ...dailySection,
+            ...probabilitySection,
+            ...crossValidationSection,
+            ...summarySection,
+        ];
+    }
     if (note)
     {
         sections.push("## Model availability", "", note, "");
