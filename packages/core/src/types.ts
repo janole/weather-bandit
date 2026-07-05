@@ -13,6 +13,10 @@ export interface Location
     longitude: number;
     /** Country label from the geocoder, if available. */
     country?: string;
+    /** ISO 3166-1 alpha-2 country code from the geocoder, if available. */
+    countryCode?: string;
+    /** IANA time zone from the geocoder, if available. */
+    timezone?: string;
 }
 
 /** One hour of forecast data for a single deterministic model. */

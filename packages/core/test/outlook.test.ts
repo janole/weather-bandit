@@ -7,7 +7,7 @@ import type { Outlook } from "../src/types.js";
 function fixtureOutlook(overrides: Partial<Outlook> = {}): Outlook
 {
     return {
-        location: { name: "Berlin", latitude: 52.52, longitude: 13.405, country: "Germany" },
+        location: { name: "Berlin", latitude: 52.52, longitude: 13.405, country: "Germany", countryCode: "DE", timezone: "Europe/Berlin" },
         generatedAt: "2026-07-05T11:42:00.000Z",
         forecastDays: 7,
         models: [],
@@ -140,7 +140,8 @@ describe("renderOutlookMarkdown", () =>
     {
         const md = renderOutlookMarkdown(richFixtureOutlook(), { style: "briefing" });
         expect(md).toContain("# Weather briefing — Berlin, Germany");
-        expect(md).toContain("## Today's weather update (2026-07-05)");
+        expect(md).toContain("Generated: 5 Jul 2026, 13:42 (Europe/Berlin)");
+        expect(md).toContain("## Today's weather update (Sun, 5 Jul 2026)");
         expect(md).toContain("| | Best-match | GFS | ECMWF |");
         expect(md).toContain("## Heat probability — ensemble analysis");
         expect(md).toContain("**30%**");
@@ -148,8 +149,8 @@ describe("renderOutlookMarkdown", () =>
         expect(md).toContain("### Bottom line");
         expect(md).toContain("- Berlin: slight rain showers");
         expect(md).toContain("- Models disagree on 2 point(s):");
-        expect(md).toContain("  - 2026-07-06: high diverges");
-        expect(md).toContain("- Ensemble (30 members): highest P(max ≥ 30°C) is 30% on 2026-07-06.");
+        expect(md).toContain("  - Mon, 6 Jul 2026: high diverges");
+        expect(md).toContain("- Ensemble (30 members): highest P(max ≥ 30°C) is 30% on Mon, 6 Jul 2026.");
         expect(md).not.toContain("### Caveats");
     });
 });

@@ -2,10 +2,40 @@ import { crossValidate } from "./cross-validate.js";
 import { fetchDeterministic, fetchEnsemble } from "./fetch.js";
 import { geocode } from "./geocode.js";
 import { getModelDef } from "./models.js";
-import type { HourlyPoint, Outlook } from "./types.js";
+import type { HourlyPoint, Location, Outlook } from "./types.js";
 
 /** Default forecast horizon for the daily outlook (days). */
 const DEFAULT_FORECAST_DAYS = 7;
+
+const COUNTRY_LOCALES: Record<string, string> = {
+    AT: "en-AT",
+    AU: "en-AU",
+    CA: "en-CA",
+    CH: "en-CH",
+    DE: "en-DE",
+    ES: "en-ES",
+    FR: "en-FR",
+    GB: "en-GB",
+    IT: "en-IT",
+    JP: "en-JP",
+    NL: "en-NL",
+    US: "en-US",
+};
+
+const COUNTRY_NAME_LOCALES: Record<string, string> = {
+    Australia: "en-AU",
+    Austria: "en-AT",
+    Canada: "en-CA",
+    France: "en-FR",
+    Germany: "en-DE",
+    Italy: "en-IT",
+    Japan: "en-JP",
+    Netherlands: "en-NL",
+    Spain: "en-ES",
+    Switzerland: "en-CH",
+    "United Kingdom": "en-GB",
+    "United States": "en-US",
+};
 
 /** Format a value with a unit, tolerating null. */
 function fmt(n: number | null | undefined, unit: string): string
@@ -51,6 +81,42 @@ function wmo(code: number | null | undefined): string
         99: "thunderstorm with heavy hail",
     };
     return map[code] ?? `weather code ${code}`;
+}
+
+function localeForLocation(location: Location): string
+{
+    const countryCode = location.countryCode?.toUpperCase();
+    if (countryCode && COUNTRY_LOCALES[countryCode])
+    {
+        return COUNTRY_LOCALES[countryCode];
+    }
+    return (location.country && COUNTRY_NAME_LOCALES[location.country]) || "en-US";
+}
+
+function formatLocalDate(date: string, location: Location): string
+{
+    return new Intl.DateTimeFormat(localeForLocation(location), {
+        day: "numeric",
+        month: "short",
+        timeZone: "UTC",
+        weekday: "short",
+        year: "numeric",
+    }).format(new Date(`${date}T12:00:00Z`));
+}
+
+function formatLocalGeneratedAt(generatedAt: string, location: Location): string
+{
+    const formatted = new Intl.DateTimeFormat(localeForLocation(location), {
+        dateStyle: "medium",
+        timeStyle: "short",
+        timeZone: location.timezone ?? "UTC",
+    }).format(new Date(generatedAt));
+    return location.timezone ? `${formatted} (${location.timezone})` : formatted;
+}
+
+function localizeDates(text: string, location: Location): string
+{
+    return text.replace(/\b\d{4}-\d{2}-\d{2}\b/g, (date) => formatLocalDate(date, location));
 }
 
 /** Build the plain-English summary paragraph from the outlook data. */
@@ -430,13 +496,13 @@ function renderBriefingProbabilityTable(outlook: Outlook): string
     const header = "| Date | P(max ≥ 28°C) | **P(max ≥ 30°C)** | P(≥ 32°C) | p50 (median) | p75 | p90 |\n|---|---:|---:|---:|---:|---:|---:|";
     return [
         header,
-        ...selected.map((p) => `| ${p.date} | ${Math.round(p.pMax28 * 100)}% | **${Math.round(p.pMax30 * 100)}%** | ${Math.round(p.pMax32 * 100)}% | ${cell(p.p50, 1)}°C | ${cell(p.p75, 1)}°C | ${cell(p.p90, 1)}°C |`),
+        ...selected.map((p) => `| ${formatLocalDate(p.date, outlook.location)} | ${Math.round(p.pMax28 * 100)}% | **${Math.round(p.pMax30 * 100)}%** | ${Math.round(p.pMax32 * 100)}% | ${cell(p.p50, 1)}°C | ${cell(p.p75, 1)}°C | ${cell(p.p90, 1)}°C |`),
     ].join("\n");
 }
 
 function renderBriefingCrossCheckTable(outlook: Outlook, dates: string[]): string
 {
-    const header = `| Model | ${dates.map((d) => `${d} max`).join(" | ")} |\n|---|${dates.map(() => "---:").join("|")}|`;
+    const header = `| Model | ${dates.map((d) => `${formatLocalDate(d, outlook.location)} max`).join(" | ")} |\n|---|${dates.map(() => "---:").join("|")}|`;
     const modelRows = MODEL_ORDER.map((id) => `| ${modelLabel(id)} | ${dates.map((d) => fmt(dailyFor(outlook, id, d)?.tempMax, "°C")).join(" | ")} |`);
     const ensemble = `| Ensemble p50 (median) | ${dates.map((d) => fmt(outlook.probabilities.find((p) => p.date === d)?.p50, "°C")).join(" | ")} |`;
     return [header, ...modelRows, ensemble].join("\n");
@@ -444,20 +510,21 @@ function renderBriefingCrossCheckTable(outlook: Outlook, dates: string[]): strin
 
 function renderBottomLineBullets(outlook: Outlook): string[]
 {
+    const localizedSummary = localizeDates(outlook.summary, outlook.location);
     const modelMarker = " Models disagree on ";
     const ensembleMarker = " Ensemble (30 members): ";
-    const modelStart = outlook.summary.indexOf(modelMarker);
-    const ensembleStart = outlook.summary.indexOf(ensembleMarker);
+    const modelStart = localizedSummary.indexOf(modelMarker);
+    const ensembleStart = localizedSummary.indexOf(ensembleMarker);
     const weatherEnd = [modelStart, ensembleStart]
         .filter((i) => i >= 0)
-        .sort((a, b) => a - b)[0] ?? outlook.summary.length;
-    const weather = outlook.summary.slice(0, weatherEnd).trim();
+        .sort((a, b) => a - b)[0] ?? localizedSummary.length;
+    const weather = localizedSummary.slice(0, weatherEnd).trim();
     const bullets = [`- ${weather}`];
 
     if (modelStart >= 0)
     {
-        const modelEnd = ensembleStart > modelStart ? ensembleStart : outlook.summary.length;
-        const modelText = outlook.summary.slice(modelStart + 1, modelEnd).trim();
+        const modelEnd = ensembleStart > modelStart ? ensembleStart : localizedSummary.length;
+        const modelText = localizedSummary.slice(modelStart + 1, modelEnd).trim();
         const splitAt = modelText.indexOf(": ");
         const lead = splitAt >= 0 ? modelText.slice(0, splitAt) : modelText;
         const rest = splitAt >= 0 ? modelText.slice(splitAt + 2) : "";
@@ -470,7 +537,7 @@ function renderBottomLineBullets(outlook: Outlook): string[]
 
     if (ensembleStart >= 0)
     {
-        bullets.push(`- Ensemble (30 members): ${outlook.summary.slice(ensembleStart + ensembleMarker.length).trim()}`);
+        bullets.push(`- Ensemble (30 members): ${localizedSummary.slice(ensembleStart + ensembleMarker.length).trim()}`);
     }
 
     return bullets;
@@ -492,12 +559,12 @@ function renderOutlookBriefingMarkdown(outlook: Outlook): string
     return [
         `# Weather briefing — ${locLabel}`,
         "",
-        `Generated: ${outlook.generatedAt}  `,
+        `Generated: ${formatLocalGeneratedAt(outlook.generatedAt, outlook.location)}  `,
         `Forecast days: ${outlook.forecastDays}  `,
         "Models: Best-match, GFS, ECMWF  ",
         "Source: [Open-Meteo](https://open-meteo.com/) (deterministic + 30-member ensemble)",
         "",
-        `## Today's weather update (${todayDate})`,
+        `## Today's weather update (${formatLocalDate(todayDate, outlook.location)})`,
         "",
         renderTodayBriefingTable(outlook, todayDate),
         "",
@@ -515,7 +582,7 @@ function renderOutlookBriefingMarkdown(outlook: Outlook): string
         "",
         "### My read",
         "",
-        `- Highest P(max ≥ 30°C): **${hotProbability}% on ${hot?.date ?? "—"}**.`,
+        `- Highest P(max ≥ 30°C): **${hotProbability}% on ${hot?.date ? formatLocalDate(hot.date, outlook.location) : "—"}**.`,
         `- Warm-day signal on that date: P(max ≥ 28°C) is **${warmProbability}%**, with ensemble median ${fmt(hot?.p50, "°C")} and p90 ${fmt(hot?.p90, "°C")}.`,
         "- Deterministic model disagreement is useful signal, not noise; use the cross-check table to see whether one model is leading or lagging the heat risk.",
         "- Re-check as the target day moves inside the 3–4 day window; the ensemble spread should narrow.",
@@ -524,7 +591,7 @@ function renderOutlookBriefingMarkdown(outlook: Outlook): string
         "",
         ...renderBottomLineBullets(outlook),
         `- Most likely today: ${wmo(todayDaily?.weatherCode)}, high ${fmt(todayDaily?.tempMax, "°C")}, rain ${fmt(todayDaily?.precipSum, "mm")}.`,
-        `- Highest heat signal: ${hotProbability}% chance of max ≥ 30°C on ${hot?.date ?? "—"}.`,
+        `- Highest heat signal: ${hotProbability}% chance of max ≥ 30°C on ${hot?.date ? formatLocalDate(hot.date, outlook.location) : "—"}.`,
         "",
     ].join("\n");
 }

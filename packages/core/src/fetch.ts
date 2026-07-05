@@ -163,7 +163,7 @@ function extractMembers(hourly: EnsembleHourly): (number | null)[][]
 export async function fetchEnsemble(loc: Location, forecastDays: number): Promise<ProbabilityBand[]>
 {
     const days = Math.min(forecastDays, MAX_ENSEMBLE_DAYS);
-    const url = `${ENSEMBLE_URL}?latitude=${loc.latitude}&longitude=${loc.longitude}&hourly=temperature_2m&timezone=Europe/Berlin&forecast_days=${days}`;
+    const url = `${ENSEMBLE_URL}?latitude=${loc.latitude}&longitude=${loc.longitude}&hourly=temperature_2m&timezone=auto&forecast_days=${days}`;
     const res = await fetch(url);
     if (!res.ok)
     {

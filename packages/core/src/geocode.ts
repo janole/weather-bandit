@@ -9,6 +9,8 @@ interface GeocodeResult
     latitude: number;
     longitude: number;
     country?: string;
+    country_code?: string;
+    timezone?: string;
 }
 
 interface GeocodeResponse
@@ -39,5 +41,7 @@ export async function geocode(city: string): Promise<Location>
         latitude: result.latitude,
         longitude: result.longitude,
         country: result.country,
+        countryCode: result.country_code,
+        timezone: result.timezone,
     };
 }
