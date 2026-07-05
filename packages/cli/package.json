@@ -1,0 +1,47 @@
+{
+  "name": "weather-bandit",
+  "version": "0.1.0",
+  "description": "Deterministic, LLM-free weather forecasts from Open-Meteo — cross-validated models, ensemble probabilities, and a Markdown + JSON daily outlook.",
+  "license": "MIT",
+  "author": "Jan Ole Suhr",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "bin": {
+    "weather-bandit": "./dist/bin.js"
+  },
+  "files": [
+    "dist",
+    "LICENSE",
+    "README.md"
+  ],
+  "keywords": [
+    "cli",
+    "weather",
+    "forecast",
+    "open-meteo",
+    "ensemble",
+    "probability",
+    "deterministic"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/janole/weather-bandit.git"
+  },
+  "homepage": "https://github.com/janole/weather-bandit",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "commander": "^15.0.0"
+  },
+  "devDependencies": {
+    "@weather-bandit/core": "workspace:*"
+  }
+}

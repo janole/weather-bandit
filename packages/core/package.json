@@ -1,0 +1,26 @@
+{
+  "name": "@weather-bandit/core",
+  "version": "0.1.0",
+  "description": "Core library for fetching, cross-validating, and rendering Open-Meteo weather forecasts.",
+  "license": "MIT",
+  "author": "Jan Ole Suhr",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  }
+}
