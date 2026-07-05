@@ -40,6 +40,10 @@ without an image.
 Enable Pages for the repository in GitHub settings. Use the `main` branch and
 the repository root as the publishing source.
 
+If this is a project site at `https://<user>.github.io/<repo>/`, set
+`baseurl: "/<repo>"` in `_config.yml` before publishing. Leave `baseurl` empty
+only for a user/org site or a custom domain mounted at `/`.
+
 The template uses Jekyll defaults in `_config.yml` so files under
 `outlooks/<slug>/index.md` automatically use the `outlook` layout.
 

@@ -1,5 +1,8 @@
 title: Weather Outlook
 description: Cross-validated daily weather outlooks from Open-Meteo.
+# For a GitHub Pages project site at https://<user>.github.io/<repo>/,
+# set this to "/<repo>". Leave empty for a user/org site or custom domain.
+baseurl: ""
 markdown: kramdown
 kramdown:
   input: GFM

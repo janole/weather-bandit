@@ -222,6 +222,9 @@ Template behavior:
 - It expects generated outlooks at `outlooks/<date>-<city>/index.md`.
 - It expects the structured JSON beside the outlook
   (`outlooks/<date>-<city>/<date>-<city>.json`).
+- For a GitHub Pages project site at `https://<user>.github.io/<repo>/`, set
+  `baseurl: "/<repo>"` in `_config.yml` before publishing. Leave `baseurl`
+  empty only for a user/org site or a custom domain mounted at `/`.
 - It uses `_config.yml` defaults so exported Weather Bandit Markdown gets the
   `outlook` layout automatically.
 - It includes a local `.design/outlook-page.html` fixture for layout checks
@@ -237,6 +240,10 @@ When initializing an empty publishing repo:
 ```sh
 cp -R <skill-directory>/templates/github-pages-default/. <target-repo>/
 ```
+
+Then, if the target is a normal project repo rather than a user/org Pages site,
+edit `_config.yml` and set `baseurl` to the repo path (for example
+`baseurl: "/weather-outlook"`).
 
 When the repo already exists, do not overwrite `_config.yml`, `_layouts/`,
 `assets/outlook.css`, `index.md`, or `README.md` without asking. Add or update
