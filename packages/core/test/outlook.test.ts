@@ -31,24 +31,24 @@ function richFixtureOutlook(): Outlook
                 model: "best-match",
                 hourly,
                 daily: [
-                    { date, tempMax: 24, tempMin: 15, precipSum: 0.2, weatherCode: 80, windMax: 22 },
-                    { date: "2026-07-06", tempMax: 29, tempMin: 17, precipSum: 0, weatherCode: 1, windMax: 12 },
+                    { date, tempMax: 24, tempMin: 15, precipSum: 0.2, weatherCode: 80, windMax: 22, cloudCoverMean: 58 },
+                    { date: "2026-07-06", tempMax: 29, tempMin: 17, precipSum: 0, weatherCode: 1, windMax: 12, cloudCoverMean: null },
                 ],
             },
             {
                 model: "gfs",
                 hourly: hourly.map((h) => ({ ...h, temperature: h.temperature + 1, windgusts: h.windgusts + 2 })),
                 daily: [
-                    { date, tempMax: 25, tempMin: 15, precipSum: 0.1, weatherCode: 80, windMax: 24 },
-                    { date: "2026-07-06", tempMax: 31, tempMin: 18, precipSum: 0, weatherCode: 1, windMax: 15 },
+                    { date, tempMax: 25, tempMin: 15, precipSum: 0.1, weatherCode: 80, windMax: 24, cloudCoverMean: 58 },
+                    { date: "2026-07-06", tempMax: 31, tempMin: 18, precipSum: 0, weatherCode: 1, windMax: 15, cloudCoverMean: null },
                 ],
             },
             {
                 model: "ecmwf",
                 hourly: hourly.map((h) => ({ ...h, temperature: h.temperature - 1, windgusts: null })),
                 daily: [
-                    { date, tempMax: 23, tempMin: 14, precipSum: 0.3, weatherCode: 80, windMax: 21 },
-                    { date: "2026-07-06", tempMax: 28, tempMin: 16, precipSum: 0, weatherCode: 1, windMax: 11 },
+                    { date, tempMax: 23, tempMin: 14, precipSum: 0.3, weatherCode: 80, windMax: 21, cloudCoverMean: 58 },
+                    { date: "2026-07-06", tempMax: 28, tempMin: 16, precipSum: 0, weatherCode: 1, windMax: 11, cloudCoverMean: null },
                 ],
             },
         ],

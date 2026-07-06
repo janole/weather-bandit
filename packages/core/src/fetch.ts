@@ -59,7 +59,7 @@ function parseHourly(raw: RawHourly): HourlyPoint[]
     }));
 }
 
-/** Map a raw daily block into normalized {@link DailySummary}s. */
+/** Map a raw daily block into normalized {@link DailySummary}s (cloud cover mean left null — enriched from hourly in {@link fetchModel}). */
 function parseDaily(raw: RawDaily): DailySummary[]
 {
     const dates = raw.time ?? [];
@@ -70,7 +70,22 @@ function parseDaily(raw: RawDaily): DailySummary[]
         precipSum: at(raw.precipitation_sum, i),
         weatherCode: at(raw.weather_code, i),
         windMax: at(raw.wind_speed_10m_max, i),
+        cloudCoverMean: null,
     }));
+}
+
+/** Mean of the non-null hourly cloud-cover values for one date (0–100), or null. */
+function meanCloudForDate(hourly: HourlyPoint[], date: string): number | null
+{
+    const vals = hourly
+        .filter((h) => h.time.slice(0, 10) === date)
+        .map((h) => h.cloudCover)
+        .filter((v): v is number => v !== null);
+    if (vals.length === 0)
+    {
+        return null;
+    }
+    return vals.reduce((a, b) => a + b, 0) / vals.length;
 }
 
 /** Build the deterministic query string shared by all three models. */
@@ -103,6 +118,15 @@ async function fetchModel(model: ModelDef, loc: Location, forecastDays: number):
         const data = (await res.json()) as ForecastResponse;
         const hourly = data.hourly ? parseHourly(data.hourly) : [];
         const daily = data.daily ? parseDaily(data.daily) : undefined;
+        // Enrich daily summaries with per-day mean cloud cover derived from the
+        // hourly series we already fetch — robust across all three models.
+        if (daily)
+        {
+            for (const d of daily)
+            {
+                d.cloudCoverMean = meanCloudForDate(hourly, d.date);
+            }
+        }
         return { model: model.id, hourly, daily };
     }
     catch (err)

@@ -131,8 +131,9 @@ function buildSummary(loc: string, days: number, models: Outlook["models"], prob
     if (today)
     {
         const sky = wmo(today.weatherCode);
+        const cloud = today.cloudCoverMean !== null ? `, cloud ${Math.round(today.cloudCoverMean)}%` : "";
         lines.push(
-            `${loc}: ${sky}, high ${fmt(today.tempMax, "°C")}/low ${fmt(today.tempMin, "°C")}, `
+            `${loc}: ${sky}${cloud}, high ${fmt(today.tempMax, "°C")}/low ${fmt(today.tempMin, "°C")}, `
             + `rain ${fmt(today.precipSum, "mm")}, wind max ${fmt(today.windMax, "km/h")}`
             + (gustMax !== null ? ` (gusts to ${fmt(gustMax, "km/h")})` : "")
             + ".",
@@ -321,7 +322,7 @@ function renderHourlyTable(models: Outlook["models"], date: string): string
     {
         return "_No hourly data available._";
     }
-    const header = "| Time | Temp °C (B/G/E) | Wind km/h (B/G/E) | Gusts km/h (B/G/E) | Rain mm (B/G/E) |\n|---|---|---|---|---|";
+    const header = "| Time | Temp °C (B/G/E) | Cloud % (B/G/E) | Wind km/h (B/G/E) | Gusts km/h (B/G/E) | Rain mm (B/G/E) |\n|---|---|---|---|---|---|";
     const rows = times.map((t) =>
     {
         const hhmm = t.slice(11, 16);
@@ -331,7 +332,7 @@ function renderHourlyTable(models: Outlook["models"], date: string): string
                 const h = byId.get(id)?.hourly.find((p) => p.time === t);
                 return h ? cell(get(h), digits) : "—";
             }).join(" / ");
-        return `| ${hhmm} | ${triple((h) => h.temperature, 1)} | ${triple((h) => h.windspeed, 1)} | ${triple((h) => h.windgusts, 1)} | ${triple((h) => h.precipitation, 1)} |`;
+        return `| ${hhmm} | ${triple((h) => h.temperature, 1)} | ${triple((h) => h.cloudCover)} | ${triple((h) => h.windspeed, 1)} | ${triple((h) => h.windgusts, 1)} | ${triple((h) => h.precipitation, 1)} |`;
     });
     return [header, ...rows].join("\n");
 }
@@ -346,7 +347,7 @@ function renderDailyTable(models: Outlook["models"]): string
     {
         return "_No daily data available._";
     }
-    const header = "| Date | T max/min °C (B/G/E) | Rain mm (B/G/E) | Wind max km/h (B/G/E) | Code (B) |\n|---|---|---|---|---|";
+    const header = "| Date | T max/min °C (B/G/E) | Cloud % (B/G/E) | Rain mm (B/G/E) | Wind max km/h (B/G/E) | Code (B) |\n|---|---|---|---|---|---|";
     const rows = dates.map((date) =>
     {
         const daily = (id: string) => byId.get(id)?.daily?.find((d) => d.date === date);
@@ -355,10 +356,11 @@ function renderDailyTable(models: Outlook["models"]): string
             const d = daily(id);
             return d ? `${cell(d.tempMax, 1)}/${cell(d.tempMin, 1)}` : "—";
         }).join(" / ");
+        const cloud = ids.map((id) => cell(daily(id)?.cloudCoverMean)).join(" / ");
         const rain = ids.map((id) => cell(daily(id)?.precipSum, 1)).join(" / ");
         const wind = ids.map((id) => cell(daily(id)?.windMax, 1)).join(" / ");
         const code = cell(daily("best-match")?.weatherCode);
-        return `| ${date} | ${maxmin} | ${rain} | ${wind} | ${code} |`;
+        return `| ${date} | ${maxmin} | ${cloud} | ${rain} | ${wind} | ${code} |`;
     });
     return [header, ...rows].join("\n");
 }

@@ -44,6 +44,8 @@ export interface DailySummary
     /** WMO weather code. */
     weatherCode: number | null;
     windMax: number | null;
+    /** Mean cloud cover over the day (0–100), computed from the hourly series. */
+    cloudCoverMean: number | null;
 }
 
 /** A full deterministic model run: hourly series plus daily aggregates. */

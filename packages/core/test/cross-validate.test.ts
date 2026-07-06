@@ -9,7 +9,7 @@ function run(model: string, day: { date: string; tempMax: number; precipSum: num
     return {
         model,
         hourly: [],
-        daily: [{ date: day.date, tempMax: day.tempMax, tempMin: 10, precipSum: day.precipSum, weatherCode: 0, windMax: day.windMax }],
+        daily: [{ date: day.date, tempMax: day.tempMax, tempMin: 10, precipSum: day.precipSum, weatherCode: 0, windMax: day.windMax, cloudCoverMean: null }],
     };
 }
 
