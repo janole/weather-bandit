@@ -1,3 +1,4 @@
+export { CLIMATE_BASELINE_END_YEAR,CLIMATE_BASELINE_LABEL, CLIMATE_BASELINE_START_YEAR, fetchClimateNormals } from "./climate.js";
 export { crossValidate } from "./cross-validate.js";
 export { fetchDeterministic, fetchEnsemble } from "./fetch.js";
 export { geocode } from "./geocode.js";
@@ -19,6 +20,7 @@ export {
 } from "./outlook.js";
 export { computeProbabilityBands,percentile, probabilityAtOrAbove } from "./probability.js";
 export type {
+    ClimateNormal,
     CrossValidation,
     DailySummary,
     HourlyPoint,

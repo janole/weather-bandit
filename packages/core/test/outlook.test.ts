@@ -12,6 +12,7 @@ function fixtureOutlook(overrides: Partial<Outlook> = {}): Outlook
         forecastDays: 7,
         models: [],
         probabilities: [],
+        climate: [],
         summary: "Berlin: clear sky.",
         ...overrides,
     };

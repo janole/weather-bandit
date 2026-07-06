@@ -78,6 +78,19 @@ export interface ProbabilityBand
     pMax32: number;
 }
 
+/** One day's long-term climate normal (baseline mean) for comparison against the forecast. */
+export interface ClimateNormal
+{
+    /** Forecast date this normal applies to, e.g. `2026-07-06`. */
+    date: string;
+    /** Baseline mean of the daily max temperature for this calendar date (°C), or null if unavailable. */
+    normalMax: number | null;
+    /** Baseline mean of the daily min temperature for this calendar date (°C). */
+    normalMin: number | null;
+    /** Baseline mean of the daily precipitation sum for this calendar date (mm). */
+    normalPrecip: number | null;
+}
+
 /** The complete structured outlook assembled by the engine. */
 export interface Outlook
 {
@@ -88,6 +101,8 @@ export interface Outlook
     forecastDays: number;
     models: ModelRun[];
     probabilities: ProbabilityBand[];
+    /** Per-day long-term climate normals (1991–2020 ERA5 baseline) for anomaly context; empty if unavailable. */
+    climate: ClimateNormal[];
     /** Plain-English summary derived from the data. */
     summary: string;
 }

@@ -1,8 +1,9 @@
+import { fetchClimateNormals } from "./climate.js";
 import { crossValidate } from "./cross-validate.js";
 import { fetchDeterministic, fetchEnsemble } from "./fetch.js";
 import { geocode } from "./geocode.js";
 import { getModelDef } from "./models.js";
-import type { HourlyPoint, Location, Outlook } from "./types.js";
+import type { ClimateNormal, HourlyPoint, Location, Outlook } from "./types.js";
 
 /** Default forecast horizon for the daily outlook (days). */
 const DEFAULT_FORECAST_DAYS = 7;
@@ -120,7 +121,7 @@ function localizeDates(text: string, location: Location): string
 }
 
 /** Build the plain-English summary paragraph from the outlook data. */
-function buildSummary(loc: string, days: number, models: Outlook["models"], probs: Outlook["probabilities"], cv: { agreements: string[]; disagreements: string[] }): string
+function buildSummary(loc: string, days: number, models: Outlook["models"], probs: Outlook["probabilities"], cv: { agreements: string[]; disagreements: string[] }, climate: ClimateNormal[] = []): string
 {
     const today = models[0]?.daily?.[0];
     const best = models.find((m) => m.model === "best-match") ?? models[0];
@@ -138,6 +139,20 @@ function buildSummary(loc: string, days: number, models: Outlook["models"], prob
             + (gustMax !== null ? ` (gusts to ${fmt(gustMax, "km/h")})` : "")
             + ".",
         );
+    }
+
+    if (today)
+    {
+        const cn = climate.find((c) => c.date === today.date);
+        if (cn && cn.normalMax !== null && today.tempMax !== null)
+        {
+            const delta = today.tempMax - cn.normalMax;
+            const sign = delta > 0 ? "+" : "";
+            const cmp = Math.abs(delta) < 1 ? "near the" : delta > 0 ? "above the" : "below the";
+            lines.push(
+                `Today's high is ${sign}${Math.round(delta * 10) / 10}°C ${cmp} 1991–2020 normal (${fmt(cn.normalMax, "°C")}).`,
+            );
+        }
     }
 
     const errored = models.filter((m) => m.error);
@@ -216,13 +231,19 @@ export async function buildOutlook(cityOrLoc: string, forecastDays: number = DEF
         fetchEnsemble(location, forecastDays),
     ]);
     const cv = crossValidate(models);
-    const summary = buildSummary(location.name, forecastDays, models, probabilities, cv);
+    // Forecast dates (from the best-match daily series) used to look up climate normals.
+    const forecastDates = models.find((m) => m.model === "best-match")?.daily?.map((d) => d.date)
+        ?? models[0]?.daily?.map((d) => d.date)
+        ?? [];
+    const climate = await fetchClimateNormals(location, forecastDates);
+    const summary = buildSummary(location.name, forecastDays, models, probabilities, cv, climate);
     return {
         location,
         generatedAt: new Date().toISOString(),
         forecastDays,
         models,
         probabilities,
+        climate,
         summary,
     };
 }
@@ -376,6 +397,42 @@ function renderProbabilityTable(probs: Outlook["probabilities"]): string
     const rows = probs.map((p) =>
         `| ${p.date} | ${cell(p.p10, 1)} | ${cell(p.p25, 1)} | ${cell(p.p50, 1)} | ${cell(p.p75, 1)} | ${cell(p.p90, 1)} | ${Math.round(p.pMax28 * 100)}% | ${Math.round(p.pMax30 * 100)}% | ${Math.round(p.pMax32 * 100)}% |`,
     );
+    return [header, ...rows].join("\n");
+}
+
+/** Format a signed temperature anomaly (forecast minus normal), e.g. `+4.1` / `−2.3`. */
+function anomaly(forecast: number | null, normal: number | null): string
+{
+    if (forecast === null || normal === null)
+    {
+        return "—";
+    }
+    const d = forecast - normal;
+    const sign = d > 0 ? "+" : "";
+    return `${sign}${Math.round(d * 10) / 10}`;
+}
+
+/** Render the climate-anomaly table comparing each forecast day to the 1991–2020 normal. */
+function renderClimateTable(outlook: Outlook): string
+{
+    const { models, climate } = outlook;
+    if (climate.length === 0)
+    {
+        return "_No climate-normal data available._";
+    }
+    const best = models.find((m) => m.model === "best-match") ?? models[0];
+    const header = "| Date | High °C | Normal high | Δ | Low °C | Normal low | Rain mm | Normal rain | × |\n|---|---|---|---|---|---|---|---|---|";
+    const rows = climate.map((c) =>
+    {
+        const d = best?.daily?.find((x) => x.date === c.date);
+        const hi = d?.tempMax ?? null;
+        const lo = d?.tempMin ?? null;
+        const rain = d?.precipSum ?? null;
+        const rainMult = (rain !== null && c.normalPrecip !== null && c.normalPrecip > 0)
+            ? `${Math.round((rain / c.normalPrecip) * 10) / 10}×`
+            : "—";
+        return `| ${c.date} | ${cell(hi, 1)} | ${cell(c.normalMax, 1)} | ${anomaly(hi, c.normalMax)} | ${cell(lo, 1)} | ${cell(c.normalMin, 1)} | ${cell(rain, 1)} | ${cell(c.normalPrecip, 1)} | ${rainMult} |`;
+    });
     return [header, ...rows].join("\n");
 }
 
@@ -545,6 +602,27 @@ function renderBottomLineBullets(outlook: Outlook): string[]
     return bullets;
 }
 
+/** A short climate-anomaly line for the briefing, comparing today to the 1991–2020 normal. Empty when no climate data. */
+function briefingClimateLine(outlook: Outlook, todayDate: string): string[]
+{
+    const cn = outlook.climate.find((c) => c.date === todayDate);
+    const today = dailyFor(outlook, "best-match", todayDate);
+    if (!cn || cn.normalMax === null || !today || today.tempMax === null)
+    {
+        return [];
+    }
+    const delta = today.tempMax - cn.normalMax;
+    const sign = delta > 0 ? "+" : "";
+    const cmp = Math.abs(delta) < 1 ? "near the" : delta > 0 ? "above the" : "below the";
+    const precipNote = (cn.normalPrecip !== null && today.precipSum !== null && cn.normalPrecip > 0)
+        ? ` Rain is ${Math.round((today.precipSum / cn.normalPrecip) * 10) / 10}× the normal (${fmt(cn.normalPrecip, "mm")}).`
+        : "";
+    return [
+        "",
+        `**Climate context:** today's high is ${sign}${Math.round(delta * 10) / 10}°C ${cmp} 1991–2020 normal (${fmt(cn.normalMax, "°C")}).${precipNote}`,
+    ];
+}
+
 function renderOutlookBriefingMarkdown(outlook: Outlook): string
 {
     const todayDate = modelRun(outlook, "best-match")?.daily?.[0]?.date ?? outlook.probabilities[0]?.date ?? "";
@@ -571,6 +649,7 @@ function renderOutlookBriefingMarkdown(outlook: Outlook): string
         renderTodayBriefingTable(outlook, todayDate),
         "",
         `So: **${wmo(todayDaily?.weatherCode)}**, high ${fmt(todayDaily?.tempMax, "°C")}/low ${fmt(todayDaily?.tempMin, "°C")}, rain ${fmt(todayDaily?.precipSum, "mm")}, wind max ${fmt(todayDaily?.windMax, "km/h")}.`,
+        ...briefingClimateLine(outlook, todayDate),
         "",
         "## Heat probability — ensemble analysis",
         "",
@@ -637,6 +716,14 @@ export function renderOutlookMarkdown(outlook: Outlook, options: RenderOutlookMa
         renderProbabilityTable(probabilities),
         "",
     ];
+    const climateSection = outlook.climate.length > 0
+        ? [
+            "## Climate context (vs 1991–2020 normal)",
+            "",
+            renderClimateTable(outlook),
+            "",
+        ]
+        : [];
     const crossValidationSection = [
         "## Cross-validation",
         "",
@@ -662,6 +749,7 @@ export function renderOutlookMarkdown(outlook: Outlook, options: RenderOutlookMa
             ...intro,
             ...summarySection,
             ...dailySection,
+            ...climateSection,
             ...probabilitySection,
         ];
     }
@@ -671,6 +759,7 @@ export function renderOutlookMarkdown(outlook: Outlook, options: RenderOutlookMa
             ...intro,
             ...todaySection,
             ...dailySection,
+            ...climateSection,
             ...probabilitySection,
         ];
     }
@@ -680,6 +769,7 @@ export function renderOutlookMarkdown(outlook: Outlook, options: RenderOutlookMa
             ...intro,
             ...todaySection,
             ...dailySection,
+            ...climateSection,
             ...probabilitySection,
             ...crossValidationSection,
             ...summarySection,
