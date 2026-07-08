@@ -65,6 +65,11 @@ weather-bandit outlook Berlin --style tables
 # Structured Outlook as JSON to stdout
 weather-bandit outlook Berlin --json
 
+# Analog forecast (conditional climatology) for a target beyond the forecast horizon
+weather-bandit analog Blavand --from 2026-08-21 --to 2026-09-03
+weather-bandit analog Blavand --from 2026-08-21 --to 2026-09-03 --top 5 --lookback 30
+weather-bandit analog Blavand --from 2026-08-21 --to 2026-09-03 --json
+
 # Write the canonical Markdown + JSON artifact to a directory
 weather-bandit export-md Berlin --out ./outlooks
 # -> ./outlooks/2026-07-05-berlin.md + ./outlooks/2026-07-05-berlin.json
@@ -74,15 +79,20 @@ weather-bandit export-md Berlin --out ./outlooks
 
 ```
 weather-bandit outlook [city] [--days <n>] [--json] [--style full|briefing|summary|tables]
+weather-bandit analog [city] --from <YYYY-MM-DD> --to <YYYY-MM-DD> [--lookback <days>] [--top <n>] [--json]
 weather-bandit export-md [city] --out <dir> [--days <n>]
 ```
 
 | Flag | Description |
 |---|---|
 | `[city]` | City name; defaults to the first entry of the cities config (`Berlin`) |
-| `-d, --days <n>` | Forecast days (default 7; ensemble capped at 16) |
-| `--json` | `outlook`: print the structured `Outlook` as JSON instead of Markdown |
+| `-d, --days <n>` | `outlook`: forecast days (default 7; ensemble capped at 16) |
+| `--json` | `outlook`/`analog`: print the structured `Outlook`/`AnalogOutlook` as JSON instead of Markdown |
 | `--style <style>` | `outlook`: Markdown style (`full`, `briefing`, `summary`, or `tables`; default `full`) |
+| `--from <date>` | `analog`: required target start date (`YYYY-MM-DD`) |
+| `--to <date>` | `analog`: required target end date (`YYYY-MM-DD`) |
+| `-l, --lookback <days>` | `analog`: lookback window length in days (default 21) |
+| `--top <n>` | `analog`: number of analog years to select (default 8) |
 | `--out <dir>` | `export-md`: required output directory for the `.md` + `.json` pair |
 
 The default output is human-readable Markdown: today's hourly table
@@ -117,6 +127,22 @@ const probs = await fetchEnsemble(loc, 7);  // per-day probability bands
 const cv = crossValidate(models);           // { agreements, disagreements }
 ```
 
+An analog forecast (conditional climatology) is built the same way, from the
+ERA5 archive instead of the live forecast API:
+
+```ts
+import { buildAnalogOutlook, renderAnalogMarkdown } from "@weather-bandit/core";
+
+// Analog: top-K past years matching the current season, vs the 1991–2020 normal
+const analog = await buildAnalogOutlook("Blavand", {
+    from: "2026-08-21",
+    to: "2026-09-03",
+    lookbackDays: 21,
+    top: 8,
+});
+console.log(renderAnalogMarkdown(analog));
+```
+
 ## How it works
 
 - **Geocoding**: `geocoding-api.open-meteo.com/v1/search` resolves a city name
@@ -134,6 +160,37 @@ const cv = crossValidate(models);           // { agreements, disagreements }
 
 Data © [Open-Meteo](https://open-meteo.com/) — this tool only reads the public,
 no-key API and adds cross-validation, probabilities, and rendering on top.
+
+## Analog forecasting (conditional climatology)
+
+The `analog` command answers a question the live forecast can't reach: *given
+how the season has gone so far, what's the weather usually like for a target
+period beyond the 16-day forecast horizon?* Instead of averaging all 30
+baseline years equally, it finds the past years whose recent weather looked
+most like right now and builds the target-period outlook from only those
+"analog" years.
+
+How it works:
+
+1. **Lookback window.** A window of recent days (default 21, ending 3 days ago
+   to allow for ERA5 preliminary-data latency) characterizes "so far" for the
+   current year.
+2. **Score each baseline year.** Every 1991–2020 baseline year is scored by
+   the RMSE of its daily max temperature over the same calendar window versus
+   the current year — lower RMSE means a better match.
+3. **Select analogs.** The top-K most similar years (default 8) become the
+   analog set.
+4. **Compare normals.** For the target date range, the conditional normal
+   (mean over the analog years) is shown side-by-side with the unconditional
+   all-30-year normal.
+
+This can surface signals that the raw 30-year mean flattens out — e.g. a
+wetter-than-normal late August for years that started like this one.
+
+> **Honest caveat:** this is a conditioned climatology, not a forecast. Even
+> the best analog was a few °C off on average over the lookback window. Use
+> it as a sharper-than-average seasonal guide, and re-run a real `outlook`
+> forecast once the target is within 16 days.
 
 ## Publishing to GitHub Pages
 
@@ -168,6 +225,7 @@ pnpm -r test          # run all tests
 pnpm dev outlook Berlin
 pnpm dev outlook Berlin --json
 pnpm dev export-md Berlin --out ./outlooks
+pnpm dev analog Blavand --from 2026-08-21 --to 2026-09-03
 ```
 
 ### Project structure
@@ -175,7 +233,8 @@ pnpm dev export-md Berlin --out ./outlooks
 ```
 packages/
   core/     @weather-bandit/core — the engine (geocode, fetch, models,
-            cross-validate, probability, outlook + Markdown/frontmatter render)
+            cross-validate, probability, climate normals, analog forecasting,
+            outlook + Markdown/frontmatter render)
   cli/      weather-bandit — the CLI (thin; all logic in core)
 skill/
   SKILL.md                              agent instructions + image catalog
@@ -194,6 +253,14 @@ themable via CSS custom properties, hero-image slot, design fixture) and
 `skill/SKILL.md` (CLI driving instructions, hero-image style catalog, publishing
 workflow). `export-md` now emits Jekyll frontmatter so artifacts are
 publish-ready.
+
+**Done (Phase 1b): Analog forecasting** — the `analog` command implements
+conditional climatology: it scores the 1991–2020 baseline years by how well
+their recent weather matches the current season (RMSE of daily max temp over a
+lookback window, default 21 days), selects the top-K analog years (default 8),
+and compares their target-period normal side-by-side with the unconditional
+all-30-year normal. Surfaces signals the raw 30-year mean flattens out; ships
+with an honest skill caveat (conditioned climatology, not a forecast).
 
 **Later:**
 - Rain/wind probabilities from the ensemble (currently derived from the

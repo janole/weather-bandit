@@ -48,6 +48,9 @@ tracking.
 
 - `outlook` prints human-readable Markdown to the terminal by default. Pass
   `--json` for the structured `Outlook` object.
+- `analog` prints a conditional-climatology outlook for a target period beyond
+  the forecast horizon. Pass `--json` for the structured `AnalogOutlook` object.
+  It is a standalone Markdown artifact — not part of the Pages publishing flow.
 - `export-md` writes a **publish-ready** Markdown file (with Jekyll frontmatter
   for the `github-pages-default` template) plus a matching JSON file to a
   directory.
@@ -78,6 +81,40 @@ weather-bandit outlook Berlin --style tables
 weather-bandit outlook Berlin --json
 ```
 
+### Analog forecast (conditional climatology)
+
+Use `analog` when the target period is beyond the 16-day forecast horizon and
+the question is "given how the season has gone so far, what's the weather
+usually like for that target period?" Instead of averaging all 30 baseline
+years equally, it finds the past years whose recent weather looked most like
+right now (by RMSE of daily max temperature over a lookback window, default 21
+days ending 3 days ago for ERA5 latency), selects the top-K most similar
+years (default 8), and compares their target-period normal side-by-side with
+the unconditional 1991–2020 normal.
+
+```sh
+# Analog outlook for a target beyond the forecast horizon
+weather-bandit analog Blavand --from 2026-08-21 --to 2026-09-03
+
+# Tune the analog set: longer lookback, fewer analog years
+weather-bandit analog Blavand --from 2026-08-21 --to 2026-09-03 --lookback 30 --top 5
+
+# Structured AnalogOutlook as JSON
+weather-bandit analog Blavand --from 2026-08-21 --to 2026-09-03 --json
+```
+
+The output is a standalone Markdown artifact (analog years table, per-date
+analog-vs-all-30 normal comparison, summary aggregates, and a skill caveat).
+It is **not** a GitHub Pages page and does not use the `export-md`/frontmatter
+flow — print it to the terminal or capture it as a plain Markdown file.
+
+When publishing analog output to a user, **always repeat the skill caveat**
+verbatim so the reader does not mistake it for a forecast:
+
+> This is a conditioned climatology, not a forecast. Even the best analog was a
+> few °C off on average. Use as a sharper-than-average seasonal guide, and
+> re-run a real forecast once the target is within 16 days.
+
 ### Export a publish-ready artifact
 
 ```sh
@@ -95,9 +132,13 @@ mv outlooks/2026-07-05-berlin/2026-07-05-berlin.md outlooks/2026-07-05-berlin/in
 | Flag | Description |
 |---|---|
 | `[city]` | City name; defaults to the first entry of the cities config (`Berlin`) |
-| `-d, --days <n>` | Forecast days (default 7; ensemble capped at 16) |
-| `--json` | `outlook`: print the structured `Outlook` as JSON instead of Markdown |
+| `-d, --days <n>` | `outlook`: forecast days (default 7; ensemble capped at 16) |
+| `--json` | `outlook`/`analog`: print the structured `Outlook`/`AnalogOutlook` as JSON instead of Markdown |
 | `--style <style>` | `outlook`: Markdown style (`full`, `briefing`, `summary`, or `tables`; default `full`) |
+| `--from <date>` | `analog`: required target start date (`YYYY-MM-DD`) |
+| `--to <date>` | `analog`: required target end date (`YYYY-MM-DD`) |
+| `-l, --lookback <days>` | `analog`: lookback window length in days (default 21) |
+| `--top <n>` | `analog`: number of analog years to select (default 8) |
 | `--out <dir>` | `export-md`: required output directory for the `.md` + `.json` pair |
 
 ## Frontmatter

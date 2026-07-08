@@ -4,6 +4,7 @@ import { fileURLToPath } from "node:url";
 
 import { Command } from "commander";
 
+import { makeAnalogCommand } from "./commands/analog.js";
 import { makeExportMdCommand } from "./commands/export-md.js";
 import { makeOutlookCommand } from "./commands/outlook.js";
 
@@ -22,6 +23,7 @@ export function createProgram(): Command
         )
         .version(VERSION);
 
+    program.addCommand(makeAnalogCommand());
     program.addCommand(makeOutlookCommand());
     program.addCommand(makeExportMdCommand());
 

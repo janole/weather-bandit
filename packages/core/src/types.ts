@@ -114,5 +114,64 @@ export interface CrossValidation
     disagreements: string[];
 }
 
+/** One candidate analog year and its similarity score to the current year. */
+export interface AnalogYear
+{
+    /** Calendar year, e.g. `"2020"`. */
+    year: string;
+    /** Similarity metric: RMSE of daily max temp over the lookback window (°C). Lower = more similar. */
+    rmse: number;
+}
+
+/** A per-date conditional normal built from the selected analog years, with the unconditional all-30 normal for comparison. */
+export interface AnalogNormal
+{
+    /** Target date, e.g. `"2026-08-21"`. */
+    date: string;
+    /** Mean of the analog years' daily max for this calendar date (°C), or null if unavailable. */
+    analogMax: number | null;
+    /** Mean of the analog years' daily min for this calendar date (°C). */
+    analogMin: number | null;
+    /** Mean of the analog years' daily precipitation sum for this calendar date (mm). */
+    analogPrecip: number | null;
+    /** The unconditional all-30 normal max for the same date (°C). */
+    allMax: number | null;
+    /** The unconditional all-30 normal min for the same date (°C). */
+    allMin: number | null;
+    /** The unconditional all-30 normal precipitation for the same date (mm). */
+    allPrecip: number | null;
+}
+
+/** Complete result of an analog forecast (conditional climatology). */
+export interface AnalogOutlook
+{
+    location: Location;
+    /** ISO 8601 generation timestamp. */
+    generatedAt: string;
+    /** The calendar window used to characterize "so far" (ISO date). */
+    lookbackStart: string;
+    lookbackEnd: string;
+    /** The year used as the "current" signature (e.g. `"2026"` if available, else `"2025"`). */
+    currentYear: string;
+    /** Number of days of current-year observation actually used (may be < window if gaps). */
+    observedDays: number;
+    /** Selected analog years, best (lowest RMSE) first. */
+    analogs: AnalogYear[];
+    /** Per-target-date conditional + unconditional normals. */
+    normals: AnalogNormal[];
+    /** Whole-target aggregate: mean analog high (°C), or null if degraded. */
+    analogAvgMax: number | null;
+    /** Whole-target aggregate: mean analog rain/day (mm). */
+    analogAvgPrecip: number | null;
+    /** Whole-target aggregate: mean all-30 high (°C). */
+    allAvgMax: number | null;
+    /** Whole-target aggregate: mean all-30 rain/day (mm). */
+    allAvgPrecip: number | null;
+    /** True if the current-year recent data was insufficient and we fell back to all-30 only. */
+    degraded: boolean;
+    /** Human-readable note explaining degradation or caveats, if any. */
+    note?: string;
+}
+
 /** The default "my cities" config; the CLI uses the first entry when no city is passed. */
 export const DEFAULT_CITIES: string[] = ["Berlin"];
