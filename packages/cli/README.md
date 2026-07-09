@@ -32,15 +32,15 @@ weather-bandit outlook Berlin --style briefing
 weather-bandit outlook Berlin --style summary
 weather-bandit outlook Berlin --style tables
 
-# Write the canonical Markdown + JSON artifact to a directory
-weather-bandit export-md Berlin --out ./outlooks
+# Analog forecast (conditional climatology) for a target beyond the forecast horizon
+weather-bandit analog Blavand --from 2026-08-21 --to 2026-09-03
 ```
 
 ## Commands
 
 ```text
 weather-bandit outlook [city] [--days <n>] [--json] [--style full|briefing|summary|tables]
-weather-bandit export-md [city] --out <dir> [--days <n>]
+weather-bandit analog [city] --from <YYYY-MM-DD> --to <YYYY-MM-DD> [--lookback <days>] [--top <n>] [--json]
 ```
 
 The CLI is thin — all fetching, cross-validation, and rendering live in

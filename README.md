@@ -5,7 +5,7 @@ forecasts from the free, no-key [Open-Meteo](https://open-meteo.com/) API,
 cross-validates multiple deterministic models, computes ensemble-derived
 probabilities, and emits a structured daily "outlook" as Markdown + JSON.
 
-It mirrors the "deterministic offline CLI + publishing template" philosophy of
+It mirrors the "deterministic offline CLI" philosophy of
 [session-bandit](https://github.com/janole/session-bandit), but for weather
 instead of session transcripts.
 
@@ -69,10 +69,6 @@ weather-bandit outlook Berlin --json
 weather-bandit analog Blavand --from 2026-08-21 --to 2026-09-03
 weather-bandit analog Blavand --from 2026-08-21 --to 2026-09-03 --top 5 --lookback 30
 weather-bandit analog Blavand --from 2026-08-21 --to 2026-09-03 --json
-
-# Write the canonical Markdown + JSON artifact to a directory
-weather-bandit export-md Berlin --out ./outlooks
-# -> ./outlooks/2026-07-05-berlin.md + ./outlooks/2026-07-05-berlin.json
 ```
 
 ### Commands
@@ -80,7 +76,6 @@ weather-bandit export-md Berlin --out ./outlooks
 ```
 weather-bandit outlook [city] [--days <n>] [--json] [--style full|briefing|summary|tables]
 weather-bandit analog [city] --from <YYYY-MM-DD> --to <YYYY-MM-DD> [--lookback <days>] [--top <n>] [--json]
-weather-bandit export-md [city] --out <dir> [--days <n>]
 ```
 
 | Flag | Description |
@@ -93,7 +88,6 @@ weather-bandit export-md [city] --out <dir> [--days <n>]
 | `--to <date>` | `analog`: required target end date (`YYYY-MM-DD`) |
 | `-l, --lookback <days>` | `analog`: lookback window length in days (default 21) |
 | `--top <n>` | `analog`: number of analog years to select (default 8) |
-| `--out <dir>` | `export-md`: required output directory for the `.md` + `.json` pair |
 
 The default output is human-readable Markdown: today's hourly table
 cross-validated across models (temp, wind, gusts, rain per model side by side),
@@ -192,27 +186,6 @@ wetter-than-normal late August for years that started like this one.
 > it as a sharper-than-average seasonal guide, and re-run a real `outlook`
 > forecast once the target is within 16 days.
 
-## Publishing to GitHub Pages
-
-`export-md` emits Jekyll frontmatter so the Markdown artifact is directly
-publishable to the bundled GitHub Pages template at
-`skill/templates/github-pages-default/`. The frontmatter includes a
-`heroImage:` slot (empty by default) that an agent with image generation can
-fill in — agents without image generation leave it blank and the page renders
-without an image.
-
-```sh
-# Build a publish-ready outlook
-mkdir -p outlooks/2026-07-05-berlin
-weather-bandit export-md Berlin --out outlooks/2026-07-05-berlin
-mv outlooks/2026-07-05-berlin/2026-07-05-berlin.md outlooks/2026-07-05-berlin/index.md
-```
-
-The template is a Jekyll site with a Swiss/data-viz theme, themable via CSS
-custom properties, a hero-image slot, and a local design fixture for layout
-checks without Jekyll. See `skill/SKILL.md` for the full agent workflow,
-including the hero-image style catalog.
-
 ## Development
 
 ```sh
@@ -224,7 +197,6 @@ pnpm -r test          # run all tests
 # Run the CLI from source (no build needed, uses tsx):
 pnpm dev outlook Berlin
 pnpm dev outlook Berlin --json
-pnpm dev export-md Berlin --out ./outlooks
 pnpm dev analog Blavand --from 2026-08-21 --to 2026-09-03
 ```
 
@@ -234,25 +206,17 @@ pnpm dev analog Blavand --from 2026-08-21 --to 2026-09-03
 packages/
   core/     @weather-bandit/core — the engine (geocode, fetch, models,
             cross-validate, probability, climate normals, analog forecasting,
-            outlook + Markdown/frontmatter render)
+            outlook + Markdown render)
   cli/      weather-bandit — the CLI (thin; all logic in core)
 skill/
-  SKILL.md                              agent instructions + image catalog
-  templates/github-pages-default/       Jekyll publishing template (Swiss theme)
+  SKILL.md                              agent instructions (CLI usage + tips)
 ```
 
 ## Roadmap
 
 **Done (Phase 0):** engine + CLI — geocoding, three deterministic models,
 30-member ensemble probabilities, cross-validation, Markdown + JSON outlook,
-`outlook` and `export-md` commands.
-
-**Done (Phase 1):** GitHub Pages template + agent skill —
-`skill/templates/github-pages-default/` (Jekyll site, Swiss/data-viz theme,
-themable via CSS custom properties, hero-image slot, design fixture) and
-`skill/SKILL.md` (CLI driving instructions, hero-image style catalog, publishing
-workflow). `export-md` now emits Jekyll frontmatter so artifacts are
-publish-ready.
+`outlook` command.
 
 **Done (Phase 1b): Analog forecasting** — the `analog` command implements
 conditional climatology: it scores the 1991–2020 baseline years by how well

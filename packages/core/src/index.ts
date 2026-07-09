@@ -30,10 +30,7 @@ export type { OutlookMarkdownStyle } from "./outlook.js";
 export {
     buildOutlook,
     DEFAULT_FORECAST_DAYS,
-    outlookArtifactBase,
-    renderOutlookFrontmatter,
     renderOutlookMarkdown,
-    slugifyOutlookLocation,
 } from "./outlook.js";
 export { computeProbabilityBands,percentile, probabilityAtOrAbove } from "./probability.js";
 export type {

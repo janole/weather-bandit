@@ -5,7 +5,6 @@ import { fileURLToPath } from "node:url";
 import { Command } from "commander";
 
 import { makeAnalogCommand } from "./commands/analog.js";
-import { makeExportMdCommand } from "./commands/export-md.js";
 import { makeOutlookCommand } from "./commands/outlook.js";
 
 const packageJsonPath = join(dirname(fileURLToPath(import.meta.url)), "../package.json");
@@ -25,7 +24,6 @@ export function createProgram(): Command
 
     program.addCommand(makeAnalogCommand());
     program.addCommand(makeOutlookCommand());
-    program.addCommand(makeExportMdCommand());
 
     return program;
 }

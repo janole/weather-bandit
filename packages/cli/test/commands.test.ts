@@ -5,13 +5,12 @@ import { createProgram } from "../src/index.js";
 
 describe("createProgram", () =>
 {
-    it("exposes the outlook, analog, and export-md commands", () =>
+    it("exposes the outlook and analog commands", () =>
     {
         const program = createProgram();
         const names = program.commands.map((c: Command) => c.name());
         expect(names).toContain("outlook");
         expect(names).toContain("analog");
-        expect(names).toContain("export-md");
     });
 
     it("outlook has a [city] argument and --json/--days/--style options", () =>
@@ -42,14 +41,6 @@ describe("createProgram", () =>
         const to = analog.options.find((o) => o.long === "--to");
         expect(from?.required).toBe(true);
         expect(to?.required).toBe(true);
-    });
-
-    it("export-md requires --out", () =>
-    {
-        const program = createProgram();
-        const exportMd = program.commands.find((c) => c.name() === "export-md")!;
-        const out = exportMd.options.find((o) => o.long === "--out");
-        expect(out?.required).toBe(true);
     });
 
     it("parses --help without exiting the process", () =>
