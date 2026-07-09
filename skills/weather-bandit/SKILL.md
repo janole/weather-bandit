@@ -5,19 +5,19 @@ description: 'Fetch deterministic, cross-validated weather forecasts from Open-M
 
 ## Prerequisites
 
-Weather Bandit is a CLI tool that must be installed on the system. Check if it's available:
+Weather Bandit is a CLI tool. Try it without installing via `npx`:
 
 ```sh
-command -v weather-bandit
+npx weather-bandit --version
 ```
 
-If not installed, install it globally:
+If `npx` can't find it, install it globally:
 
 ```sh
 npm install -g weather-bandit
 ```
 
-If the package is not yet on npm, install from source:
+If the package is not yet on npm, install from source (requires pnpm 10+):
 
 ```sh
 git clone https://github.com/janole/weather-bandit.git
@@ -27,13 +27,17 @@ pnpm -r build
 npm install -g packages/cli
 ```
 
-Requires Node.js 22+ and pnpm 10+ (for building from source only; the npm install requires nothing but Node.js).
+Requires Node.js 22+. Building from source additionally requires pnpm 10+.
 
 Verify the installation:
 
 ```sh
 weather-bandit --version
 ```
+
+All examples below use the `weather-bandit` command. If you installed via `npx`
+only (not global), prefix commands with `npx` instead, e.g.
+`npx weather-bandit outlook Berlin`.
 
 ## What Weather Bandit does
 
