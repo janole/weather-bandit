@@ -17,17 +17,9 @@ If `npx` can't find it, install it globally:
 npm install -g weather-bandit
 ```
 
-If the package is not yet on npm, install from source (requires pnpm 10+):
-
-```sh
-git clone https://github.com/janole/weather-bandit.git
-cd weather-bandit
-pnpm install
-pnpm -r build
-npm install -g packages/cli
-```
-
-Requires Node.js 22+. Building from source additionally requires pnpm 10+.
+If the package is not yet on npm, build from source per the repo README
+(`git clone` → `pnpm install` → `pnpm -r build` → `npm install -g packages/cli`;
+requires Node.js 22+ and pnpm 10+).
 
 Verify the installation:
 
@@ -80,6 +72,23 @@ weather-bandit outlook Berlin --style tables
 # Structured JSON (machine-readable, no Markdown)
 weather-bandit outlook Berlin --json
 ```
+
+#### Choosing a style
+
+`full` (the default) appends a 24-row hourly table for today — roughly 4× the
+size of `summary` for the same headline numbers. When you are relaying the
+outlook into a conversation, pick the leanest style that answers the question:
+
+- **Conversational / "what's the weather today"** → `--style summary` (headline
+  line, daily table, climate Δ, probability bands; no hourly dump).
+- **"Should I bring an umbrella", "how hot", reasoning wanted** → `--style
+  briefing` (adds prose + heat analysis, still no hourly table).
+- **User explicitly wants hour-by-hour** → `full` (the default). Only reach for
+  it when the hourly detail is the point.
+- **Post-processing the numbers programmatically** → `--json`.
+
+Do not default to `full` just because it is the default — for a spoken-style
+answer it wastes context on an hourly table the user did not ask for.
 
 ### Analog forecast (conditional climatology)
 
