@@ -208,8 +208,47 @@ packages/
             cross-validate, probability, climate normals, analog forecasting,
             outlook + Markdown render)
   cli/      weather-bandit — the CLI (thin; all logic in core)
-skill/
-  SKILL.md                              agent instructions (CLI usage + tips)
+skills/
+  weather-bandit/SKILL.md             agent skill (CLI usage + tips)
+```
+
+### Publishing the CLI
+
+`weather-bandit` is a **self-contained npm package**: `tsup` bundles the whole
+`@weather-bandit/core` engine into the CLI `dist/`, so the published package has
+exactly one runtime dependency (`commander`) and no `workspace:*` references.
+End users need only Node.js 22+ — no pnpm, no monorepo checkout.
+
+The publishable package is `packages/cli` (the repo root is `private` and is
+not published). It exposes a `weather-bandit` bin, so after publishing both work:
+
+```sh
+npm install -g weather-bandit   # global CLI
+npx weather-bandit outlook Berlin  # one-off, no install
+```
+
+The `prepublishOnly` / `prepack` lifecycle hooks rebuild `dist/` (core first,
+then CLI) before any `npm publish` or `npm pack`, so the bundle is never stale.
+
+```sh
+pnpm run ok                  # quality gate (build + typecheck + lint:fix + test)
+cd packages/cli
+npm pack                     # dry-run: rebuild dist/ + show tarball contents
+npm publish                  # live (requires npm login)
+```
+
+The version is sourced from `packages/cli/package.json`.
+
+### Agent skill
+
+The `skills/weather-bandit/SKILL.md` agent skill is installable on its own via
+the [open agent skills](https://github.com/vercel-labs/skills) CLI — it drops the
+skill instructions into a coding agent's skills directory. It does **not** install
+the `weather-bandit` CLI; the skill's Prerequisites section tells the agent to
+install the CLI first (via `npm install -g weather-bandit` or from source):
+
+```sh
+npx skills add janole/weather-bandit --skill weather-bandit
 ```
 
 ## Roadmap
