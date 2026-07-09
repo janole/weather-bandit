@@ -300,7 +300,7 @@ validate `--from/--to` and `--lookback/--top`, try/catch with
 - Update `README.md`: add `analog` to the CLI usage + commands table, add a
   short "Analog forecasting" section explaining conditional climatology +
   the skill caveat, add to the Roadmap as done.
-- Update `skill/SKILL.md`: document the `analog` command and when to use it
+- Update `skills/weather-bandit/SKILL.md`: document the `analog` command and when to use it
   (target beyond the 16-day forecast horizon; "what's it usually like given
   how the season has gone so far"). Add the skill-caveat boilerplate so
   agents repeat it in published output.
