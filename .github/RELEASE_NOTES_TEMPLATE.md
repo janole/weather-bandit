@@ -2,11 +2,11 @@
 
 [A brief, one-sentence summary of the release.]
 
-**Full Changelog:** [`v[PREV]...v[VERSION]`](https://github.com/janole/botbandit/compare/v[PREV]...v[VERSION])
+**Full Changelog:** [`v[PREV]...v[VERSION]`](https://github.com/janole/weather-bandit/compare/v[PREV]...v[VERSION])
 
 ### 🚀 Published
 
-- **npm:** [`@janole/bot-bandit`](https://www.npmjs.com/package/@janole/bot-bandit/v/[VERSION]) (v[VERSION])
+- **npm:** [`weather-bandit`](https://www.npmjs.com/package/weather-bandit/v/[VERSION]) (v[VERSION])
 
 ### Breaking Changes
 
